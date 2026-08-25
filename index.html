@@ -98,6 +98,48 @@ body.solid-rules .rule{background:#d0d0d0;background-image:none;height:1px}
 .pill{font-size:11.5px;font-weight:700;letter-spacing:.04em;padding:4px 10px;border-radius:999px;background:#eef1f6;color:var(--ink-2);white-space:nowrap}
 .pill.warnp{background:#fdf1d8;color:#7a5a06}
 .pill.donep{background:#e6f2ea;color:#1a6340}
+.opt.lead{margin:0 0 16px;border-width:1.5px}
+.opt.lead h4{font-size:17px}
+.timeset{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;
+  padding-top:14px;border-top:1px solid var(--line-soft)}
+.timeset>span{font-size:13px;font-weight:600;color:var(--ink-2)}
+.seg.lvl button.go{font-weight:700}
+.seg.lvl button.go:hover{background:var(--blue-tint);border-color:var(--blue);color:#12408f}
+.timeset .mins{font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:7px}
+.timeset .mins input{width:64px;padding:7px 9px;font:inherit;font-size:14px;text-align:center;
+  border:1.5px solid var(--line);border-radius:9px}
+.timeset .mins input:focus{outline:none;border-color:var(--blue)}
+details.adv{margin-top:4px;border:1px solid var(--line-soft);border-radius:14px;background:#fff;overflow:hidden}
+details.adv>summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;flex-direction:column;gap:3px}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary b{font-size:15px}
+details.adv>summary span{font-size:12.5px;color:var(--ink-3)}
+details.adv>summary::after{content:'Show';position:absolute;right:20px;font-size:12.5px;color:var(--blue);font-weight:600}
+details.adv[open]>summary::after{content:'Hide'}
+details.adv>summary{position:relative}
+details.adv .opt-grid{padding:0 18px 18px}
+details.adv>div:last-child{padding:0 18px 18px}
+.stats{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:20px}
+.statbox{border:1px solid var(--line-soft);border-radius:13px;background:#fff;padding:15px 16px}
+.statbox b{display:block;font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.statbox span{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.statbox.good b{color:var(--green)} .statbox.bad b{color:var(--red)}
+.panel{border:1px solid var(--line-soft);border-radius:14px;background:#fff;padding:16px 18px;margin-bottom:16px}
+.panel h4{margin:0 0 3px;font-size:15px}
+.panel .hint{margin:0 0 13px}
+.spark{display:flex;align-items:flex-end;gap:5px;height:92px;margin-top:6px}
+.spark i{flex:1;min-width:5px;background:var(--blue);border-radius:3px 3px 0 0;opacity:.85;position:relative}
+.spark i:hover{opacity:1}
+.spark-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:7px}
+.donebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.donebar .grow{flex:1;min-width:190px}
+.rowdel{flex:none;width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;
+  background:transparent;color:var(--ink-3);cursor:pointer;opacity:.5;transition:opacity .12s,background .12s,color .12s}
+.rowdel svg{width:17px;height:17px}
+.row:hover .rowdel{opacity:1}
+.rowdel:hover{background:var(--red-tint,#fdecec);color:var(--red)}
+.rowdel:focus-visible{outline:2px solid var(--blue);outline-offset:2px;opacity:1}
+@media(hover:none){ .rowdel{opacity:.75} }
 .cloud{display:flex;align-items:center;gap:14px;margin:16px 0 0;padding:14px 16px;
   border:1px solid var(--line-soft);border-radius:14px;background:#fff}
 .cloud .ci{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;
@@ -442,7 +484,13 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
     </div>
     <div class="card" id="sets"><div class="empty">No sets yet — upload a PDF to begin.</div></div>
 
-    <div class="sec-head"><h3>Recent attempts</h3><button class="btn-quiet hidden" id="btnClearHist">Clear history</button></div>
+    <div class="sec-head"><h3>Recent attempts</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-quiet" id="btnStats">Progress</button>
+        <button class="btn-quiet" id="btnPractised">Questions done</button>
+        <button class="btn-quiet hidden" id="btnClearHist">Clear history</button>
+      </div>
+    </div>
     <div class="card" id="hist"><div class="empty">Nothing yet.</div></div>
 
     <div class="bar">
@@ -460,6 +508,19 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
     <div class="brand"><h1 id="setupTitle">Set up practice</h1></div>
     <p class="sub" id="setupSub"></p>
 
+    <div class="opt lead" id="moduleCard">
+      <h4>Practice module</h4>
+      <p class="hint">Built the way the real test builds one: the College Board's domain mix, the real order — Craft and Structure, then Information and Ideas, then Standard English Conventions, then Expression of Ideas — grouped by skill and easiest to hardest inside each. Answers stay hidden until you finish.</p>
+      <div id="modReady"></div>
+      <div class="timeset">
+        <span>Time limit</span>
+        <div class="chips" id="modTimeChips"></div>
+        <label class="mins">Exact <input type="number" id="modMins" min="1" max="180" step="1"> min</label>
+      </div>
+    </div>
+
+    <details class="adv" id="advBox">
+      <summary><b>Build my own instead</b><span>Pick the questions, the length, the timer and the interface yourself.</span></summary>
     <div class="opt-grid">
       <div class="opt" id="poolCard">
         <h4>Question pool</h4>
@@ -468,8 +529,8 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
         <div class="chips" id="fDom" style="margin-top:9px"></div>
         <div class="chips" id="fSkill" style="margin-top:9px"></div>
         <div class="seg" id="segRepeats" style="margin-top:12px">
-          <button data-v="include" aria-pressed="true">Include repeats</button>
-          <button data-v="skip" aria-pressed="false">Skip ones I've done</button>
+          <button data-v="include" aria-pressed="false">Include repeats</button>
+          <button data-v="skip" aria-pressed="true">Skip ones I've done</button>
           <button data-v="only" aria-pressed="false">Only ones I've done</button>
         </div>
         <p class="hint" id="seenHint" style="margin:9px 0 0"></p>
@@ -546,16 +607,45 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
         </div>
       </div>
     </div>
-
-    <div class="opt" id="moduleCard" style="margin-top:16px">
-      <h4>Full practice module</h4>
-      <p class="hint">Assembles a module the way the real test does: the College Board's domain mix, the real order — Craft and Structure, then Information and Ideas, then Standard English Conventions, then Expression of Ideas — grouped by skill and running easiest to hardest inside each domain, with the real clock and answers held until you finish.</p>
-      <div id="modReady"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-primary" id="btnStart">Start custom practice →</button>
     </div>
+    </details>
+  </div>
+</section>
 
-    <div class="bar">
-      <button class="btn btn-primary" id="btnStart">Start practice →</button>
+<!-- ══════════════════════════ ANALYTICS ══════════════════════════ -->
+<section id="scr-stats" class="screen setup">
+  <div class="wrap">
+    <button class="btn-quiet" id="btnStatsBack" style="margin-bottom:14px">← Back to library</button>
+    <div class="brand"><h1>Your progress</h1></div>
+    <p class="sub" id="statsSub"></p>
+    <div class="stats" id="statHead"></div>
+    <div id="statBody"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ PRACTISED ══════════════════════════ -->
+<section id="scr-done" class="screen review">
+  <div class="wrap">
+    <button class="btn-quiet" id="btnDoneBack" style="margin-bottom:14px">← Back to library</button>
+    <div class="brand"><h1>Questions you have done</h1></div>
+    <p class="sub" id="doneSub"></p>
+    <div class="donebar">
+      <span class="searchbox grow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg><input id="doneSearch" type="search" placeholder="Search the text, a skill, or a question ID" autocomplete="off"></span>
+      <div class="chips" id="doneFilters">
+        <button class="chip" aria-pressed="true" data-f="all">All</button>
+        <button class="chip" aria-pressed="false" data-f="wrong">Got wrong</button>
+        <button class="chip" aria-pressed="false" data-f="right">Got right</button>
+        <button class="chip" aria-pressed="false" data-f="marked">Marked</button>
+      </div>
     </div>
+    <div class="donebar" style="margin-top:10px">
+      <span id="doneCount" style="font-size:13px;color:var(--ink-3);margin-right:auto"></span>
+      <button class="btn-quiet" id="btnDoneExpand">Expand all</button>
+      <button class="btn btn-primary" id="btnDonePractise">Practise these</button>
+    </div>
+    <div id="doneList"></div>
   </div>
 </section>
 
@@ -763,6 +853,9 @@ async function deleteSet(meta){
   for(let i=0;i<meta.chunks;i++) await store.del(`bb_set_${meta.id}_${i}`);
   cache.delete(meta.id);
   await saveIndex((await loadIndex()).filter(s=>s.id!==meta.id));
+  /* Also drop it from the account, or the next sync would hand it straight
+     back. Answered-question history is deliberately left alone. */
+  if(typeof cloudDeleteSet==='function') cloudDeleteSet(meta.id);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1270,7 +1363,8 @@ async function importPdf(file,onProg){
 /* ═══════════════════════════════════════════════════════════════
    3.  App state, preferences, library
    ═══════════════════════════════════════════════════════════════ */
-const K_SESSION='bb_session', K_SEEN='bb_seen';
+const K_SESSION='bb_session', K_SEEN='bb_seen', K_LOG='bb_log';
+const LOG_MAX=4000;
 
 /* ── Real digital-SAT module blueprints ──────────────────────────────────
    Reading and Writing: 27 questions in 32 minutes. Questions are grouped by
@@ -1311,10 +1405,14 @@ const BLUEPRINT={
     skillOrder:{}, byDifficultyOnly:[], mixDomains:true
   }
 };
+/* Difficulty bands. Medium mirrors the balanced first module everyone sits;
+   Easy and Hard mirror the two second modules the test routes you into.
+   Hard is deliberately punishing — the real hard module is mostly hard
+   questions, so this one takes every hard question it can get. */
 const MIXES={
-  m1  :{label:'Module 1',          note:'the balanced mix everyone sees first', Easy:0.30, Medium:0.40, Hard:0.30},
-  easy:{label:'Module 2 — easier', note:'the lower-difficulty second module',   Easy:0.55, Medium:0.35, Hard:0.10},
-  hard:{label:'Module 2 — harder', note:'the higher-difficulty second module',  Easy:0.10, Medium:0.35, Hard:0.55}
+  easy  :{label:'Easy',   note:'mostly easy questions, to build accuracy',        Easy:0.55, Medium:0.35, Hard:0.10},
+  medium:{label:'Medium', note:'the balanced mix of a real first module',         Easy:0.30, Medium:0.40, Hard:0.30},
+  hard  :{label:'Hard',   note:'the hard second module — almost all hard',        Easy:0.00, Medium:0.20, Hard:0.80}
 };
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 function skillRank(skill,order){
@@ -1325,8 +1423,8 @@ function skillRank(skill,order){
   }
   return 99;
 }
-const app={ index:[], selected:new Set(), history:[], seen:{},
-  prefs:{rule:'photo',meta:'hide',letters:'circle',fs:1,split:50,repeats:'include'},
+const app={ index:[], selected:new Set(), history:[], seen:{}, log:[], qIndex:null,
+  prefs:{rule:'photo',meta:'hide',letters:'circle',fs:1,split:50,repeats:'skip'},
   pool:[], poolTitle:'', lastResult:null, filter:'' };
 
 function show(id){
@@ -1344,9 +1442,10 @@ function applyPrefs(){
 function savePrefs(){ store.set(K_PREFS, JSON.stringify(app.prefs)); cloudPushPrefs(); }
 
 async function refreshLibrary(){
-  app.index=await loadIndex();
+  app.index=await loadIndex(); app.qIndex=null;
   try{ app.history=JSON.parse(await store.get(K_HIST)||'[]'); }catch(e){ app.history=[]; }
   try{ app.seen=JSON.parse(await store.get(K_SEEN)||'{}'); }catch(e){ app.seen={}; }
+  try{ app.log=JSON.parse(await store.get(K_LOG)||'[]'); }catch(e){ app.log=[]; }
   renderSets();
   renderHistory();
   await renderResume();
@@ -1367,11 +1466,16 @@ function renderSets(){
       ${s.ephemeral?'<span class="pill warnp">Session only</span>':''}
       ${done?`<span class="pill donep">${done} done</span>`:''}
       <span class="pill">${s.count}</span>
+      <button class="rowdel" data-del="${esc(s.id)}" title="Remove “${esc(s.name)}”" aria-label="Remove ${esc(s.name)}">${TRASH_ICON}</button>
     </label>`;
   }).join('');
   $$('#sets .chk').forEach(c=>c.addEventListener('change',()=>{
     c.checked? app.selected.add(c.dataset.id) : app.selected.delete(c.dataset.id);
     updateSelBar();
+  }));
+  $$('#sets [data-del]').forEach(b=>b.addEventListener('click',e=>{
+    e.preventDefault(); e.stopPropagation();     // the row is a label; do not toggle it
+    removeSets(app.index.filter(s=>s.id===b.dataset.del));
   }));
 }
 function renderHistory(){
@@ -1475,7 +1579,7 @@ async function handleFiles(files){
         `You have already practised ${doneAgain.length} of these questions`,
         `${new Set(fresh).size} question${new Set(fresh).size===1?'':'s'} imported, and <b>${doneAgain.length}</b> of them (${pct}%) `+
         `you have answered before. What should new practice sets do with repeats? You can change this any time on the setup screen.`,
-        [{label:'Skip repeats',value:'skip'},{label:'Include them',value:'include',primary:true}]);
+        [{label:'Include them',value:'include'},{label:'Leave them out',value:'skip',primary:true}]);
       app.prefs.repeats=pick; savePrefs();
       toast(pick==='skip'? 'Repeats will be left out of new sets.' : 'Repeats will be included.');
     }
@@ -1488,14 +1592,23 @@ $('#btnClearHist').addEventListener('click',()=>{
     app.history=[]; await store.set(K_HIST,'[]'); renderHistory(); toast('History cleared.');
   });
 });
-$('#btnDelete').addEventListener('click',()=>{
-  const chosen=app.index.filter(s=>app.selected.has(s.id));
-  if(!chosen.length) return;
-  confirmSheet('Delete '+chosen.length+' set'+(chosen.length>1?'s':'')+'?','This removes the questions from this device. The original PDFs are untouched.','Delete',async()=>{
-    for(const s of chosen) await deleteSet(s);
-    app.selected.clear(); await refreshLibrary(); toast('Deleted.');
-  });
-});
+function removeSets(list){
+  if(!list||!list.length) return;
+  const one=list.length===1;
+  const what=one? '“'+esc(list[0].name)+'”' : list.length+' sets';
+  const n=list.reduce((a,s)=>a+s.count,0);
+  confirmSheet(
+    one? 'Remove '+what+'?' : 'Remove '+what+'?',
+    `${n} question${n===1?'':'s'} will be removed${cloud.on?' from this device and from your account':''}. `+
+    `Your answer history is kept, so anything you have already practised still counts. The original PDF is untouched.`,
+    'Remove',
+    async()=>{
+      for(const s of list){ await deleteSet(s); app.selected.delete(s.id); }
+      await refreshLibrary();
+      toast(one? 'Set removed.' : list.length+' sets removed.');
+    });
+}
+$('#btnDelete').addEventListener('click',()=>removeSets(app.index.filter(s=>app.selected.has(s.id))));
 
 function choiceSheet(title,msg,options){
   return new Promise(res=>{
@@ -1617,6 +1730,12 @@ function orderModule(picked,bp){
   }
   return out;
 }
+let modMinutes=null;                 // null means "use the real length"
+let advTouched=false, advWanted=null;
+$('#advBox').addEventListener('toggle',()=>{
+  /* A programmatic change lands on the value we asked for; anything else is you. */
+  if($('#advBox').open!==advWanted) advTouched=true;
+});
 async function buildModule(testName,mixKey){
   const R=moduleReadiness(testName);
   if(!R||!R.total){ toast('No questions of that section in these sets.'); return; }
@@ -1637,11 +1756,12 @@ async function buildModule(testName,mixKey){
   }
   if(!picked.length){ toast('Could not assemble a module.'); return; }
   const qs=orderModule(picked,R.bp);
-  const secs = qs.length>=R.bp.questions
+  const natural = qs.length>=R.bp.questions
     ? R.bp.minutes*60
     : Math.max(60, Math.round(qs.length*(R.bp.minutes*60/R.bp.questions)));
+  const secs = modMinutes===0? 0 : modMinutes? modMinutes*60 : natural;
   const title=`${R.bp.label} — ${MIXES[mixKey].label}`+(qs.length<R.bp.questions?` (${qs.length} of ${R.bp.questions})`:'');
-  startSession(qs,title,{instant:false,advance:'stay',mode:'down',limit:secs,sets:app.poolSets||[]});
+  startSession(qs,title,{instant:false,advance:'stay',mode:secs?'down':'off',limit:secs,sets:app.poolSets||[]});
 }
 function renderModuleCard(){
   const box=$('#modReady');
@@ -1664,12 +1784,37 @@ function renderModuleCard(){
       <h5>${esc(R.bp.label)} module ${badge}</h5>
       <p class="stat-line">${R.bp.questions} questions · ${R.bp.minutes} minutes · answers held until you finish</p>
       ${rows}${tip}
-      <div class="seg" style="margin-top:12px">
-        ${Object.keys(MIXES).map(k=>`<button data-mod="${t}" data-mix="${k}" aria-pressed="false">${esc(MIXES[k].label)}</button>`).join('')}
+      <div class="seg lvl" style="margin-top:13px">
+        ${Object.keys(MIXES).map(k=>`<button data-mod="${t}" data-mix="${k}" class="go" title="${esc(MIXES[k].note)}">${esc(MIXES[k].label)}</button>`).join('')}
       </div>
+      <p class="stat-line" style="margin:9px 0 0">${Object.keys(MIXES).map(k=>esc(MIXES[k].label)+' — '+esc(MIXES[k].note)).join(' · ')}</p>
     </div>`;
   }).join('');
   $$('#modReady [data-mod]').forEach(b=>b.addEventListener('click',()=>buildModule(b.dataset.mod,b.dataset.mix)));
+  renderModTime(tests[0]);
+  /* Fold the custom panel away when a full module is available, and open it
+     when one is not, so there is never a dead end. Once you open or close it
+     yourself, your choice stands. */
+  const anyComplete=tests.some(t=>moduleReadiness(t).complete);
+  const adv=$('#advBox');
+  if(adv && !advTouched){ advWanted=!anyComplete; adv.open=advWanted; }
+}
+function renderModTime(testName){
+  const bp=BLUEPRINT[testName]; if(!bp) return;
+  const opts=[{v:null,l:bp.minutes+' min'},{v:27,l:'27'},{v:35,l:'35'},{v:45,l:'45'},{v:0,l:'No limit'}];
+  const box=$('#modTimeChips');
+  box.innerHTML=opts.map(o=>`<button class="chip" aria-pressed="${modMinutes===o.v}" data-t="${o.v===null?'':o.v}">${esc(o.l)}</button>`).join('');
+  $('#modMins').value = modMinutes===null? bp.minutes : (modMinutes||'');
+  $$('#modTimeChips .chip').forEach(b=>b.addEventListener('click',()=>{
+    modMinutes = b.dataset.t===''? null : Number(b.dataset.t);
+    renderModTime(testName);
+  }));
+  $('#modMins').oninput=()=>{
+    const v=Number($('#modMins').value);
+    modMinutes = v>0? v : null;
+    $$('#modTimeChips .chip').forEach(c=>c.setAttribute('aria-pressed',
+      String((c.dataset.t===''? null : Number(c.dataset.t))===modMinutes)));
+  };
 }
 function renderSetup(){
   $('#setupSub').textContent=`${app.poolTitle} · ${app.pool.length} questions available.`;
@@ -2243,6 +2388,20 @@ document.addEventListener('click',e=>{
 /* ═══════════════════════════════════════════════════════════════
    7.  Results & review
    ═══════════════════════════════════════════════════════════════ */
+function mergeLog(rows){
+  const by=new Map(app.log.map(r=>[r.n,r]));
+  for(const r of rows) by.set(r.n,Object.assign(by.get(r.n)||{},r));
+  app.log=[...by.values()].sort((a,b)=>b.at-a.at).slice(0,LOG_MAX);
+}
+/* Every question currently in the library, keyed by its College Board id. */
+async function questionIndex(){
+  if(app.qIndex) return app.qIndex;
+  const m=new Map();
+  for(const meta of app.index){
+    try{ for(const q of await loadSetQuestions(meta)) m.set(q.id,q); }catch(e){}
+  }
+  app.qIndex=m; return m;
+}
 function markSeen(id,ok){
   const s=app.seen[id]||{n:0,c:0};
   s.n++; if(ok) s.c++;
@@ -2277,6 +2436,17 @@ async function finishExam(auto){
   await store.set(K_SEEN,JSON.stringify(app.seen));
   await store.del(K_SESSION);
   cloudPushResult({title:S.title,total:rows.length,correct,seconds,skills},rows,sessionId);
+
+  /* Keep a per-question record locally too, so progress and the practised
+     library work with no account and no connection. */
+  const stamp=Date.now();
+  const fresh=rows.filter(r=>r.answered).map(r=>({
+    n:sessionId+':'+r.q.id, qid:r.q.id, sid:sessionId, title:S.title,
+    test:r.q.test||'', domain:r.q.domain||'', skill:r.q.skill||'', difficulty:r.q.difficulty||'',
+    given:r.given||'', correct:!!r.ok, marked:!!r.marked,
+    seconds:Math.round(r.seconds||0), at:stamp}));
+  mergeLog(fresh);
+  await store.set(K_LOG,JSON.stringify(app.log));
 
   renderReview('all');
   show('scr-review');
@@ -2445,7 +2615,13 @@ async function sbRest(path,opt={}){
     body:opt.body?JSON.stringify(opt.body):undefined});
   if(!r.ok){
     const t=await r.text().catch(()=>'');
-    throw new Error('Sync failed ('+r.status+') '+t.slice(0,140));
+    const err=new Error('Sync failed ('+r.status+') '+t.slice(0,140));
+    err.status=r.status;
+    /* Timeouts, throttling and server faults are worth retrying. A 400, 404 or
+       409 means the request can never succeed as written — for example a set
+       deleted while its questions were still uploading. */
+    err.retryable = r.status===401||r.status===408||r.status===429||r.status>=500;
+    throw err;
   }
   const t=await r.text();
   return t? JSON.parse(t) : null;
@@ -2465,7 +2641,12 @@ async function sbAll(path,page=500){
 /* ── outbox ─────────────────────────────────────────────────────────── */
 function outbox(){ try{ return JSON.parse(ls.get(K_OUTBOX)||'[]'); }catch(e){ return []; } }
 function outboxSave(q){ ls.set(K_OUTBOX,JSON.stringify(q.slice(-400))); }
-function enqueue(job){ const q=outbox(); q.push(job); outboxSave(q); }
+let jobSeq=Number(ls.get('bb_outbox_seq')||0);
+function enqueue(job){
+  job.n=++jobSeq; ls.set('bb_outbox_seq',String(jobSeq));
+  const q=outbox(); q.push(job); outboxSave(q);
+}
+function dropJob(n){ outboxSave(outbox().filter(j=>j.n!==n)); }
 const MERGE='resolution=merge-duplicates,return=minimal';
 async function runJob(j){
   if(j.k==='set')       return sbRest('sets',         {method:'POST',body:[j.row],prefer:MERGE});
@@ -2476,18 +2657,40 @@ async function runJob(j){
   if(j.k==='session')   return sbRest('session_state',{method:'POST',body:[j.row],prefer:MERGE});
   if(j.k==='delSet')    return sbRest('sets?id=eq.'+encodeURIComponent(j.id),{method:'DELETE'});
 }
-async function flushOutbox(){
-  if(!cloud.on || !navigator.onLine) return;
-  const q=outbox(); if(!q.length) return;
-  const keep=[];
-  for(let i=0;i<q.length;i++){
-    try{ await runJob(q[i]); }
-    catch(e){ keep.push(...q.slice(i)); break; }
-  }
-  outboxSave(keep);
-  return keep.length;
+/* Only one flush may run at a time. Two overlapping flushes each hold their own
+   snapshot of the queue, and whichever finishes last writes its snapshot back —
+   quietly resurrecting jobs the other had already sent, or erasing new ones. */
+let flushing=null;
+function flushOutbox(){
+  if(!cloud.on || !navigator.onLine) return Promise.resolve(outbox().length);
+  if(flushing) return flushing;
+  flushing=(async()=>{
+    try{
+      for(;;){
+        const q=outbox();
+        if(!q.length) return 0;
+        const job=q[0];
+        try{
+          await runJob(job);
+          dropJob(job.n);
+        }catch(e){
+          if(e && e.retryable===false){ dropJob(job.n); continue; }  // will never send; discard
+          return outbox().length;                                     // try the rest later
+        }
+      }
+    } finally { flushing=null; }
+  })();
+  return flushing;
 }
 function pushNow(job){ enqueue(job); if(cloud.on) flushOutbox().then(renderCloud).catch(()=>{}); }
+function cloudDeleteSet(id){
+  if(!cloud.on) return;
+  /* Drop any queued upload for this set first, so a delete cannot race it. */
+  outboxSave(outbox().filter(j=>!((j.k==='set'&&j.row&&j.row.id===id) ||
+                                  (j.k==='questions'&&j.rows&&j.rows[0]&&j.rows[0].set_id===id))));
+  pushNow({k:'delSet',id});
+}
+function pendingDeletes(){ return new Set(outbox().filter(j=>j.k==='delSet').map(j=>j.id)); }
 
 /* ── outgoing ───────────────────────────────────────────────────────── */
 function cloudPushSet(set){
@@ -2561,9 +2764,10 @@ async function cloudPull(onNote){
 
   const sets=await sbAll('sets?select=id,name,tests,question_count,created_at&order=created_at.desc',200);
   const have=new Set(app.index.map(s=>s.id));
+  const going=pendingDeletes();
   let restored=0;
   for(const s of sets){
-    if(have.has(s.id)) continue;
+    if(have.has(s.id) || going.has(s.id)) continue;
     note(`Downloading “${s.name}”…`);
     const rows=await sbAll('questions?select=ord,data&set_id=eq.'+encodeURIComponent(s.id)+'&order=ord',300);
     if(!rows.length) continue;
@@ -2587,13 +2791,23 @@ async function cloudSync(opts={}){
     cloud.busy=false;
     await refreshLibrary();
     if(restored) toast(restored===1?'1 set restored from your account.':restored+' sets restored from your account.');
-    else if(!left) toast('Everything is synced.');
   }catch(e){
     cloud.busy=false; cloud.note='';
     renderCloud();
-    toast(e.message||'Could not sync.');
+    /* A background sync should not nag; only a sync the user asked for speaks up. */
+    if(opts.quiet!==true) toast(e.message||'Could not sync.');
   }
 }
+/* Pull again when the app is reopened, but not more than once a minute. */
+let lastAuto=0;
+function autoSync(){
+  if(!cloud.on || cloud.busy) return;
+  if(Date.now()-lastAuto < 60000) return;
+  lastAuto=Date.now();
+  cloudSync({quiet:true});
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) autoSync(); });
+window.addEventListener('focus',autoSync);
 async function cloudBackfill(){
   /* First sign-in on a device that already has local sets: send them up. */
   for(const meta of app.index){
@@ -2629,22 +2843,22 @@ function renderCloud(){
     $('#btnSignIn').addEventListener('click',authSheet);
     return;
   }
-  const ago = cloud.lastSync? relTime(cloud.lastSync) : 'not yet this session';
-  const state = cloud.busy? (cloud.note||'Syncing…')
-              : pending? `${pending} change${pending===1?'':'s'} waiting to upload`
-              : `Synced ${ago}`;
-  box.innerHTML=`<div class="cloud ${cloud.busy?'busy':''}">
+  const state = cloud.busy? (cloud.note||'Saving…')
+              : pending? (navigator.onLine? `Saving ${pending} change${pending===1?'':'s'}…`
+                                          : `Offline — ${pending} change${pending===1?'':'s'} will upload when you reconnect`)
+              : cloud.lastSync? `Everything saved · ${relTime(cloud.lastSync)}`
+              : 'Everything saved automatically';
+  box.innerHTML=`<div class="cloud ${cloud.busy||pending?'busy':''}">
     <div class="ci">${CLOUD_ICON}</div>
     <div class="ct"><b>${esc(cloud.email||'Signed in')}</b><span>${esc(state)}</span></div>
-    <button class="btn btn-quiet" id="btnSyncNow" ${cloud.busy?'disabled':''}>Sync now</button>
     <button class="btn btn-quiet" id="btnSignOut">Sign out</button>
   </div>`;
-  $('#btnSyncNow').addEventListener('click',()=>cloudSync());
   $('#btnSignOut').addEventListener('click',()=>{
     confirmSheet('Sign out?','Your uploads and progress stay in your account. This device keeps its local copy.',
       'Sign out',()=>{ cloudSetSession(null); renderCloud(); toast('Signed out.'); });
   });
 }
+const TRASH_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/><path d="M10 11v6M14 11v6"/></svg>';
 const CLOUD_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>';
 function relTime(t){
   const s=Math.round((Date.now()-t)/1000);
@@ -2705,7 +2919,200 @@ function authSheet(){
 window.addEventListener('online',()=>{ if(cloud.on) flushOutbox().then(renderCloud).catch(()=>{}); });
 
 /* ═══════════════════════════════════════════════════════════════
-   8.  Boot
+   9.  Progress and the practised-question library
+   ═══════════════════════════════════════════════════════════════ */
+const pct=(c,n)=>n? Math.round(c/n*100) : 0;
+const barColour=p=>p>=70?'var(--green)':p<50?'var(--red)':'#e0a800';
+function groupBy(rows,key){
+  const m=new Map();
+  for(const r of rows){
+    const k=key(r)||'—';
+    if(!m.has(k)) m.set(k,{n:0,c:0,secs:0});
+    const g=m.get(k); g.n++; if(r.correct) g.c++; g.secs+=r.seconds||0;
+  }
+  return m;
+}
+function barRows(entries,opts={}){
+  return entries.map(([k,g])=>{
+    const p=pct(g.c,g.n);
+    const extra = opts.time? `<span class="bv" style="width:74px;color:var(--ink-3);font-weight:500">${fmtTime(g.secs/g.n)}/q</span>` : '';
+    return `<div class="brow"><span class="bn">${esc(k)}</span>`+
+           `<span class="bt"><i style="width:${p}%;background:${barColour(p)}"></i></span>`+
+           `${extra}<span class="bv">${g.c}/${g.n}</span></div>`;
+  }).join('');
+}
+function renderStats(){
+  const log=app.log;
+  $('#statsSub').textContent = log.length
+    ? `${log.length} answered question${log.length===1?'':'s'} across ${new Set(log.map(r=>r.sid)).size} practice run${new Set(log.map(r=>r.sid)).size===1?'':'s'}.`
+    : 'Nothing yet. Finish a practice run and your progress appears here.';
+  if(!log.length){
+    $('#statHead').innerHTML=''; $('#statBody').innerHTML='<div class="card"><div class="empty">No answered questions yet.</div></div>';
+    return;
+  }
+  const correct=log.filter(r=>r.correct).length;
+  const secs=log.reduce((a,r)=>a+(r.seconds||0),0);
+  const days=new Set(log.map(r=>new Date(r.at).toDateString()));
+  const acc=pct(correct,log.length);
+  /* consecutive days ending today or yesterday */
+  let streak=0;
+  for(let i=0;;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    if(days.has(d.toDateString())) streak++;
+    else if(i>0) break;
+  }
+  $('#statHead').innerHTML=`
+    <div class="statbox"><b>${log.length}</b><span>Questions done</span></div>
+    <div class="statbox ${acc>=70?'good':acc<50?'bad':''}"><b>${acc}%</b><span>Accuracy</span></div>
+    <div class="statbox"><b>${fmtTime(secs)}</b><span>Time practised</span></div>
+    <div class="statbox"><b>${fmtTime(secs/log.length)}</b><span>Per question</span></div>
+    <div class="statbox"><b>${streak}</b><span>Day streak</span></div>`;
+
+  const dOrder={Easy:0,Medium:1,Hard:2};
+  const byDiff=[...groupBy(log,r=>r.difficulty)].sort((a,b)=>(dOrder[a[0]]??9)-(dOrder[b[0]]??9));
+  const byDom=[...groupBy(log,r=>r.domain)].sort((a,b)=>a[1].c/a[1].n-b[1].c/b[1].n);
+  const bySkill=[...groupBy(log,r=>r.skill||r.domain)].sort((a,b)=>a[1].c/a[1].n-b[1].c/b[1].n);
+
+  /* last runs, oldest to newest */
+  const runs=new Map();
+  for(const r of [...log].sort((a,b)=>a.at-b.at)){
+    if(!runs.has(r.sid)) runs.set(r.sid,{n:0,c:0,at:r.at,title:r.title||''});
+    const g=runs.get(r.sid); g.n++; if(r.correct) g.c++;
+  }
+  const series=[...runs.values()].slice(-14);
+  const spark = series.length>1
+    ? `<div class="panel"><h4>Accuracy run by run</h4><p class="hint">The last ${series.length} practice runs, oldest first.</p>
+        <div class="spark">${series.map(g=>{const p=pct(g.c,g.n);
+          return `<i style="height:${Math.max(4,p)}%;background:${barColour(p)}" title="${esc(g.title)} — ${g.c}/${g.n} (${p}%)"></i>`;}).join('')}</div>
+        <div class="spark-x"><span>${new Date(series[0].at).toLocaleDateString()}</span><span>${new Date(series[series.length-1].at).toLocaleDateString()}</span></div>
+      </div>`
+    : '';
+
+  const weak=bySkill.filter(([,g])=>g.n>=3 && g.c/g.n<0.7).slice(0,5);
+  const weakHtml = weak.length
+    ? `<div class="panel"><h4>Where the points are going</h4>
+        <p class="hint">Skills you are under 70% on, weakest first, counting only those you have seen at least three times.</p>
+        ${barRows(weak,{time:true})}
+        <div style="margin-top:14px"><button class="btn btn-primary" id="btnDrillWeak">Practise these ${weak.length} skills</button></div>
+      </div>`
+    : `<div class="panel"><h4>Where the points are going</h4><p class="hint">Nothing under 70% yet with enough attempts to judge. Keep going.</p></div>`;
+
+  $('#statBody').innerHTML =
+    `<div class="panel"><h4>By difficulty</h4><p class="hint">Accuracy and average pace at each level.</p>${barRows(byDiff,{time:true})}</div>` +
+    (byDom.length>1? `<div class="panel"><h4>By domain</h4><p class="hint">Weakest first.</p>${barRows(byDom,{time:true})}</div>`:'') +
+    `<div class="panel"><h4>By skill</h4><p class="hint">Weakest first. Pace matters as much as accuracy — a real module gives you about 71 seconds a question.</p>${barRows(bySkill,{time:true})}</div>` +
+    spark + weakHtml;
+
+  const drill=$('#btnDrillWeak');
+  if(drill) drill.addEventListener('click',async()=>{
+    const want=new Set(weak.map(([k])=>k));
+    const idx=await questionIndex();
+    const ids=new Set(app.log.filter(r=>want.has(r.skill||r.domain)).map(r=>r.qid));
+    const qs=[...idx.values()].filter(q=>want.has(q.skill||q.domain));
+    if(!qs.length) return toast('Those questions are no longer in your library.');
+    shuffle(qs);
+    startSession(qs.slice(0,27),'Weak skills drill',{instant:true,advance:'stay',mode:'up',limit:0,sets:app.index.map(s=>s.id)});
+  });
+}
+
+/* ── every question you have answered, searchable ─────────────────────── */
+let doneFilter='all', doneQuery='';
+async function renderDone(){
+  const idx=await questionIndex();
+  const q=doneQuery.trim().toLowerCase();
+  let rows=app.log.slice();
+  if(doneFilter==='wrong')  rows=rows.filter(r=>!r.correct);
+  if(doneFilter==='right')  rows=rows.filter(r=>r.correct);
+  if(doneFilter==='marked') rows=rows.filter(r=>r.marked);
+  if(q) rows=rows.filter(r=>{
+    if((r.skill+' '+r.domain+' '+r.difficulty+' '+r.qid).toLowerCase().includes(q)) return true;
+    const Q=idx.get(r.qid); if(!Q) return false;
+    const hay=[...Q.passage,...Q.stem,...Q.rationale].map(b=>b.text||'').join(' ')+' '+Q.choices.map(c=>c.text).join(' ');
+    return hay.toLowerCase().includes(q);
+  });
+
+  const total=app.log.length;
+  $('#doneSub').textContent = total
+    ? `Everything you have answered, newest first, with the official rationale.`
+    : 'Once you finish a practice run, every question you answered is kept here.';
+  $('#doneCount').textContent = total? `${rows.length} of ${total} shown` : '';
+  $('#btnDonePractise').disabled = !rows.length;
+
+  if(!rows.length){
+    $('#doneList').innerHTML='<div class="card"><div class="empty">'+
+      (total? 'Nothing matches that.' : 'No answered questions yet.')+'</div></div>';
+    return;
+  }
+  $('#doneList').innerHTML=rows.slice(0,300).map((r,i)=>{
+    const Q=idx.get(r.qid);
+    const cls=r.correct?'ok':'no';
+    if(!Q) return `<details class="qcard ${cls}"><summary>
+        <span class="idx">${i+1}</span>
+        <span class="ttl">${esc(r.skill||r.domain||'Question')} · ${esc(r.difficulty||'')}</span>
+        <span class="ans">${esc(r.given||'—')}</span></summary>
+      <div class="body"><p class="hint">This question came from a set you have since removed, so its text is no longer stored.</p>
+      <div style="margin-top:10px;font-size:12.5px;color:var(--ink-3)">Question ID ${esc(r.qid)} · ${new Date(r.at).toLocaleDateString()}</div></div></details>`;
+    const head=plain((Q.stem[0]&&Q.stem[0].text)||(Q.passage[0]&&Q.passage[0].text)||'Question');
+    return `<details class="qcard ${cls}">
+      <summary>
+        <span class="idx">${i+1}</span>
+        <span class="ttl">${r.marked?'<svg class="mk" viewBox="0 0 24 24" fill="#b3261e" style="width:11px;height:13px;margin-right:7px;vertical-align:-1px"><path d="M6 2h12v20l-6-4-6 4z"/></svg>':''}${esc(head.slice(0,120))}</span>
+        <span class="ans">${esc(r.given||'—')} → ${esc(Q.correct)}</span>
+      </summary>
+      <div class="body">
+        <div class="q-meta" style="display:flex">${[Q.test,Q.domain,Q.skill,Q.difficulty].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+        ${Q.passage.length? `<div class="passage">${blocksHtml(Q.passage)}</div>`:''}
+        <div class="stem">${blocksHtml(Q.stem)}</div>
+        ${Q.spr
+          ? `<div class="rchoice ${r.correct?'c':'w'}"><b>Your answer</b><span>${esc(r.given||'—')}</span><span class="tagx">${r.correct?'Correct':'Incorrect'}</span></div>
+             <div class="rchoice c"><b>Accepted</b><span>${esc(Q.correct)}</span></div>`
+          : Q.choices.map(c=>{
+              const isC=c.letter===Q.correct, isY=c.letter===r.given;
+              const k=isC?'c':(isY?'w':'');
+              const tag=isC?'Correct':(isY?'Your answer':'');
+              return `<div class="rchoice ${k}"><b>${c.letter}.</b><span>${rich(c.text)}</span>${tag?`<span class="tagx">${tag}</span>`:''}</div>`;
+            }).join('')}
+        <div class="rat-h">Rationale</div>
+        <div class="rat">${Q.rationale.length? blocksHtml(Q.rationale) : '<p>No rationale was included in the export for this question.</p>'}</div>
+        <div style="margin-top:14px;font-size:12.5px;color:var(--ink-3)">Took ${fmtTime(r.seconds)} · ${new Date(r.at).toLocaleDateString()} · Question ID ${esc(Q.id)}</div>
+      </div>
+    </details>`;
+  }).join('');
+}
+$('#btnStats').addEventListener('click',()=>{ renderStats(); show('scr-stats'); });
+$('#btnStatsBack').addEventListener('click',()=>show('scr-lib'));
+$('#btnPractised').addEventListener('click',async()=>{ await renderDone(); show('scr-done'); });
+$('#btnDoneBack').addEventListener('click',()=>show('scr-lib'));
+$('#doneSearch').addEventListener('input',e=>{ doneQuery=e.target.value; renderDone(); });
+$$('#doneFilters .chip').forEach(c=>c.addEventListener('click',()=>{
+  doneFilter=c.dataset.f;
+  $$('#doneFilters .chip').forEach(x=>x.setAttribute('aria-pressed',String(x===c)));
+  renderDone();
+}));
+$('#btnDoneExpand').addEventListener('click',()=>{
+  const cards=$$('#doneList details'), open=cards.some(d=>!d.open);
+  cards.forEach(d=>d.open=open);
+  $('#btnDoneExpand').textContent = open? 'Collapse all' : 'Expand all';
+});
+$('#btnDonePractise').addEventListener('click',async()=>{
+  const idx=await questionIndex();
+  const q=doneQuery.trim().toLowerCase();
+  let rows=app.log.slice();
+  if(doneFilter==='wrong')  rows=rows.filter(r=>!r.correct);
+  if(doneFilter==='right')  rows=rows.filter(r=>r.correct);
+  if(doneFilter==='marked') rows=rows.filter(r=>r.marked);
+  const seen=new Set(), qs=[];
+  for(const r of rows){
+    if(seen.has(r.qid)) continue; seen.add(r.qid);
+    const Q=idx.get(r.qid); if(Q) qs.push(Q);
+  }
+  if(!qs.length) return toast('None of those questions are still in your library.');
+  startSession(qs.slice(0,54),'Redo — questions you have done',
+    {instant:true,advance:'stay',mode:'up',limit:0,sets:app.index.map(s=>s.id)});
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   10.  Boot
    ═══════════════════════════════════════════════════════════════ */
 (async function boot(){
   try{ const p=JSON.parse(await store.get(K_PREFS)||'null'); if(p) app.prefs=Object.assign(app.prefs,p); }catch(e){}
@@ -2713,7 +3120,7 @@ window.addEventListener('online',()=>{ if(cloud.on) flushOutbox().then(renderClo
   applyPrefs();
   await refreshLibrary();
   renderCloud();
-  if(cloud.on) cloudSync({pull:!ls.get(K_PULLED)});
+  if(cloud.on){ lastAuto=Date.now(); cloudSync({quiet:true}); }
   if('serviceWorker' in navigator && location.protocol.startsWith('http'))
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   ensurePdfjs().catch(()=>{});   // warm the engine so the first upload is instant
