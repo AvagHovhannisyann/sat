@@ -1,0 +1,15 @@
+{
+  "name": "sat-practice",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Digital-SAT practice interface for College Board Question Bank exports",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "pdfjs-dist": "3.11.174"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.0"
+  }
+}
