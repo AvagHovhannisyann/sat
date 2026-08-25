@@ -393,6 +393,9 @@ details.adv>div:last-child{padding:0 18px 18px}
   .btn{min-height:44px}
 }
 
+.revline{margin:0 0 13px;padding:11px 14px;border-radius:11px;background:var(--d-amber-wash);
+  color:#8a5a12;font-size:13px;line-height:1.5;border:1px solid #f3dfc0}
+.revline b{font-weight:650}
 .dangerzone{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px;padding:16px 18px;
   border:1px solid var(--line-soft);border-radius:14px;background:#fff}
 .dangerzone>div{flex:1;min-width:220px;display:flex;flex-direction:column;gap:3px}
@@ -828,6 +831,7 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
     <div class="opt lead" id="moduleCard">
       <h4>Practice module</h4>
       <p class="hint">Built the way the real test builds one: the College Board's domain mix, the real order — Craft and Structure, then Information and Ideas, then Standard English Conventions, then Expression of Ideas — grouped by skill and easiest to hardest inside each. Answers stay hidden until you finish.</p>
+      <p class="revline hidden" id="revLine"></p>
       <div id="modReady"></div>
       <div class="timeset">
         <span>Time limit</span>
@@ -1819,6 +1823,7 @@ function skillRank(skill,order){
   return 99;
 }
 const app={ index:[], selected:new Set(), history:[], seen:{}, log:[], qIndex:null,
+  review:{}, clock:0,
   prefs:{rule:'photo',meta:'hide',letters:'circle',fs:1,split:50,repeats:'skip'},
   pool:[], poolTitle:'', lastResult:null, filter:'' };
 
@@ -1841,6 +1846,8 @@ async function refreshLibrary(){
   try{ app.history=JSON.parse(await store.get(K_HIST)||'[]'); }catch(e){ app.history=[]; }
   try{ app.seen=JSON.parse(await store.get(K_SEEN)||'{}'); }catch(e){ app.seen={}; }
   try{ app.log=JSON.parse(await store.get(K_LOG)||'[]'); }catch(e){ app.log=[]; }
+  try{ app.review=JSON.parse(await store.get(K_REV)||'{}'); }catch(e){ app.review={}; }
+  try{ app.clock=parseInt(await store.get(K_CLOCK)||'0',10)||0; }catch(e){ app.clock=0; }
   renderSets();
   renderHistory();
   renderStatRow();
@@ -1923,6 +1930,9 @@ function renderStatRow(){
      val:Math.round(cor/tot*100)+'%', sub:`${cor} of ${tot} correct`});
   if(secs) cards.push({ic:'v', svg:D_ICON.clock, lbl:'Study time',
      val:fmtTime(secs), sub:'Total time in practice'});
+  const owed=dueCount();
+  if(owed) cards.push({ic:'a', svg:D_ICON.trend, lbl:'Due for review', val:owed,
+     sub:'Questions you got wrong'});
   if(app.log.length && cards.length<4) cards.push({ic:'v', svg:D_ICON.book,
      lbl:'Questions answered', val:app.log.length, sub:'Kept with rationales'});
   box.innerHTML=cards.map(c=>`<div class="stat"><span class="ic ${c.ic}">${c.svg}</span>
@@ -2138,6 +2148,9 @@ function confirmSheet(title,msg,okLabel,onOk){
 const setup={diff:new Set(),dom:new Set(),skill:new Set(),count:0,order:'doc',feedback:'end',advance:'stay',timer:'off',mins:32,repeats:'include'};
 function alreadyDone(q){ return !!app.seen[q.id]; }
 function repeatOk(q){
+  /* The whole point of the review ledger is that these come back, so a due
+     question is never filtered out as "already done". */
+  if(isDue(q.id) && setup.repeats!=='only') return true;
   return setup.repeats==='skip'? !alreadyDone(q) : setup.repeats==='only'? alreadyDone(q) : true;
 }
 
@@ -2210,7 +2223,13 @@ function moduleReadiness(testName){
 function pickByMix(list,n,mix){
   const b={Easy:[],Medium:[],Hard:[],Other:[]};
   for(const q of list) (b[q.difficulty]||b.Other).push(q);
-  ['Easy','Medium','Hard','Other'].forEach(k=>shuffle(b[k]));
+  /* Shuffle, then float anything you owe to the top of its own bucket: the
+     module keeps its blueprint exactly, but the slots it does have prefer
+     questions you have already got wrong. */
+  ['Easy','Medium','Hard','Other'].forEach(k=>{
+    shuffle(b[k]);
+    b[k].sort((x,y)=>(isDue(y.id)?1:0)-(isDue(x.id)?1:0));
+  });
   const out=[];
   for(const k of ['Easy','Medium','Hard']) out.push(...b[k].splice(0,Math.min(Math.round(n*mix[k]),b[k].length)));
   const rest=shuffle([...b.Easy,...b.Medium,...b.Hard,...b.Other]);
@@ -2263,9 +2282,20 @@ async function buildModule(testName,mixKey){
     : Math.max(60, Math.round(qs.length*(R.bp.minutes*60/R.bp.questions)));
   const secs = modMinutes===0? 0 : modMinutes? modMinutes*60 : natural;
   const title=`${R.bp.label} — ${MIXES[mixKey].label}`+(qs.length<R.bp.questions?` (${qs.length} of ${R.bp.questions})`:'');
-  startSession(qs,title,{instant:false,advance:'stay',mode:secs?'down':'off',limit:secs,sets:app.poolSets||[]});
+  startSession(qs,title,{instant:false,advance:'stay',mode:secs?'down':'off',limit:secs,
+    sets:app.poolSets||[],module:true});
+}
+function renderReviewLine(){
+  const box=$('#revLine'); if(!box) return;
+  const due=dueCount(app.pool), held=pendingCount();
+  if(!held){ box.innerHTML=''; box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = due
+    ? `<b>${due} question${due===1?'':'s'} due for review.</b> These are ones you got wrong. They go in first, and a timed module gives them any slot that fits its blueprint.`
+    : `<b>${held} question${held===1?'':'s'} waiting to come back.</b> None are due yet — keep practising and they will reappear on their own.`;
 }
 function renderModuleCard(){
+  renderReviewLine();
   const box=$('#modReady');
   const tests=Object.keys(BLUEPRINT).filter(t=>app.pool.some(q=>(q.test||'')===t));
   if(!tests.length){ box.innerHTML='<p class="hint" style="margin:0">These sets carry no section label, so a blueprint module cannot be built from them.</p>'; return; }
@@ -2408,7 +2438,17 @@ $('#btnStart').addEventListener('click',()=>{
   if(!qs.length){ toast('No questions match those filters.'); return; }
   if(setup.order==='shuffle') for(let i=qs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [qs[i],qs[j]]=[qs[j],qs[i]]; }
   if(setup.order==='hard'){ const r={Hard:0,Medium:1,Easy:2}; qs.sort((a,b)=>(r[a.difficulty]??3)-(r[b.difficulty]??3)); }
-  if(setup.count>0) qs=qs.slice(0,setup.count);
+  /* When the run is shorter than the pool, the questions you owe come first
+     so they are not cut off the end. */
+  if(setup.count>0 && qs.length>setup.count){
+    const due=qs.filter(q=>isDue(q.id));
+    if(due.length){
+      const pos=new Map(qs.map((q,i)=>[q,i]));
+      const chosen=due.concat(qs.filter(q=>!isDue(q.id))).slice(0,setup.count);
+      chosen.sort((a,b)=>pos.get(a)-pos.get(b));   // keep the order you asked for
+      qs=chosen;
+    } else qs=qs.slice(0,setup.count);
+  }
   startSession(qs, app.poolTitle, {
     instant:setup.feedback==='instant', advance:setup.advance,
     mode:setup.timer, limit:setup.timer==='down'? setup.mins*60 : 0,
@@ -2434,6 +2474,7 @@ function startSession(qs,title,opt){
   S.sets=opt.sets||[];
   S.id=uid(); S.elapsed=0; S.started=Date.now(); S.qStart=Date.now();
   S.hidden=false; S.annotate=false; S.finished=false; S.crossout=true;
+  S.retried={}; S.requeued=0; S.module=!!opt.module;
   enterExam();
 }
 async function resumeSession(saved){
@@ -2596,11 +2637,34 @@ function paintCheck(){
   const b=$('#btnCheckAns');
   if(b) b.addEventListener('click',checkAnswer);
 }
+/* Put a missed question back into this run, roughly ten to fifteen questions
+   further on. Only for instant-feedback practice: in a timed module you learn
+   nothing from meeting a question again before you have seen the answer, and
+   the module has to stay the length it claims to be. */
+function requeueMissed(i){
+  if(S.module || !S.instant) return false;
+  /* A second look needs room to be a second look. On a short run there is no
+     honest gap to put it in, and quietly turning "5 questions" into 7 is not
+     what was asked for — those misses wait for the next session instead. */
+  if(S.qs.length < 12) return false;
+  if(S.retried[S.qs[i].id]) return false;              // one second look, not a loop
+  const gap=8+Math.floor(Math.random()*7);
+  const at=Math.min(S.i+gap, S.qs.length);
+  S.qs.splice(at,0,S.qs[i]);
+  S.answers.splice(at,0,null); S.checked.splice(at,0,false);
+  S.marked.splice(at,0,false); S.elim.splice(at,0,[]);
+  S.annot.splice(at,0,null);   S.spent.splice(at,0,0);
+  S.retried[S.qs[i].id]=true;
+  S.requeued=(S.requeued||0)+1;
+  return true;
+}
 function checkAnswer(){
   if(!S.instant || S.checked[S.i] || !answered(S.i)) return;
   saveAnnotations();
   S.checked[S.i]=true;
   markSeen(S.qs[S.i].id, isRight(S.i));
+  if(!isRight(S.i) && requeueMissed(S.i))
+    toast('You will see this one again later in this set.');
   renderQuestion();
   saveSession();
   if(S.advance==='next' && S.i<S.qs.length-1) setTimeout(()=>goto(S.i+1),900);
@@ -2893,6 +2957,56 @@ document.addEventListener('click',e=>{
 /* A question you have answered is kept forever, on its own, keyed by its
    College Board id. Sets come and go; this does not. */
 const QKEY = id => 'bb_q_' + id;
+
+/* ── Spaced review ──────────────────────────────────────────────────────
+   A question you get wrong is not finished with you. It goes into a ledger
+   and comes back a set number of questions later — first after about ten,
+   then after longer and longer gaps as you keep getting it right. Answer it
+   correctly four times running and it graduates out of the ledger.
+
+   The clock is measured in questions answered, not in days, because that is
+   how practice is actually paced: "about fifteen questions from now" means
+   something to you, "in three days" does not.                             */
+const K_REV='bb_review', K_CLOCK='bb_clock';
+const REV_GAPS=[10,25,60,150];
+function revJitter(n){ return Math.max(4, Math.round(n*(0.78+Math.random()*0.44))); }
+function reviewOf(id){ return app.review[id]||null; }
+function isDue(id){ const r=app.review[id]; return !!r && app.clock>=r.due; }
+function dueList(pool){ return pool.filter(q=>isDue(q.id)); }
+function pendingCount(){ return Object.keys(app.review).length; }
+function dueCount(pool){
+  const ids=pool? new Set(pool.map(q=>q.id)) : null;
+  return Object.keys(app.review).filter(id=>(!ids||ids.has(id)) && app.clock>=app.review[id].due).length;
+}
+/* Wrong: back to the start of the ladder. */
+function reviewMiss(id){
+  const prev=app.review[id];
+  app.review[id]={step:0, due:app.clock+revJitter(REV_GAPS[0]),
+                  miss:(prev&&prev.miss||0)+1, at:Date.now()};
+}
+/* Right: only moves along the ladder if the question was already in it. */
+function reviewHit(id){
+  const r=app.review[id]; if(!r) return;
+  const step=r.step+1;
+  if(step>=REV_GAPS.length){ delete app.review[id]; return; }   // graduated
+  r.step=step; r.due=app.clock+revJitter(REV_GAPS[step]); r.at=Date.now();
+}
+async function saveReview(){
+  try{
+    await store.set(K_REV,JSON.stringify(app.review));
+    await store.set(K_CLOCK,String(app.clock));
+  }catch(e){}
+  cloudPushReview();
+}
+/* Newest wins when two devices disagree. */
+function mergeReview(rows){
+  for(const r of rows){
+    const cur=app.review[r.question_id];
+    const at=new Date(r.updated_at||0).getTime();
+    if(!cur || at>(cur.at||0))
+      app.review[r.question_id]={step:r.step|0, due:r.due|0, miss:r.misses|0, at};
+  }
+}
 async function archiveQuestions(qs){
   const fresh = [];
   for(const q of qs){
@@ -2970,10 +3084,19 @@ async function finishExam(auto){
      library work with no account and no connection. */
   const stamp=Date.now();
   const fresh=rows.filter(r=>r.answered).map(r=>({
-    n:sessionId+':'+r.q.id, qid:r.q.id, sid:sessionId, title:S.title,
+    n:sessionId+':'+r.q.id+(r.i?':'+r.i:''), qid:r.q.id, sid:sessionId, title:S.title,
     test:r.q.test||'', domain:r.q.domain||'', skill:r.q.skill||'', difficulty:r.q.difficulty||'',
     given:r.given||'', correct:!!r.ok, marked:!!r.marked,
     seconds:Math.round(r.seconds||0), at:stamp}));
+  /* Advance the clock first, so the gap is counted from the end of this run
+     and a question missed here cannot come due inside it. */
+  app.clock += rows.filter(r=>r.answered).length;
+  for(const r of rows){
+    if(!r.answered) continue;
+    r.ok? reviewHit(r.q.id) : reviewMiss(r.q.id);
+  }
+  await saveReview();
+
   mergeLog(fresh);
   await store.set(K_LOG,JSON.stringify(app.log));
   await archiveQuestions(rows.filter(r=>r.answered).map(r=>r.q));
@@ -3184,6 +3307,8 @@ async function runJob(j){
   if(j.k==='questions') return sbRest('questions',    {method:'POST',body:j.rows, prefer:MERGE});
   if(j.k==='attempts')  return sbRest('attempts',     {method:'POST',body:j.rows, prefer:MERGE});
   if(j.k==='archive')   return sbRest('answered_questions',{method:'POST',body:j.rows, prefer:MERGE});
+  if(j.k==='review')    return sbRest('review_queue',{method:'POST',body:j.rows, prefer:MERGE});
+  if(j.k==='clock')     return sbRest('prefs',{method:'POST',body:j.rows.map(r=>({user_id:r.user_id,clock:r.clock})), prefer:MERGE});
   if(j.k==='result')    return sbRest('results',      {method:'POST',body:[j.row],prefer:MERGE});
   if(j.k==='prefs')     return sbRest('prefs',        {method:'POST',body:[j.row],prefer:MERGE});
   if(j.k==='session')   return sbRest('session_state',{method:'POST',body:[j.row],prefer:MERGE});
@@ -3237,6 +3362,16 @@ function cloudPushSet(set){
     enqueue({k:'questions',rows});
   }
   if(cloud.on) flushOutbox().then(renderCloud).catch(()=>{});
+}
+function cloudPushReview(){
+  if(!cloud.on) return;
+  const rows=Object.entries(app.review).map(([id,r])=>({
+    user_id:cloud.uid, question_id:id, step:r.step|0, due:r.due|0,
+    misses:r.miss|0, updated_at:new Date(r.at||Date.now()).toISOString()}));
+  if(!rows.length) return;
+  for(let i=0;i<rows.length;i+=100) enqueue({k:'review',rows:rows.slice(i,i+100)});
+  enqueue({k:'clock',rows:[{user_id:cloud.uid, clock:app.clock|0}]});
+  flushOutbox().then(renderCloud).catch(()=>{});
 }
 function cloudPushArchive(qs){
   if(!cloud.on || !qs.length) return;
@@ -3293,6 +3428,11 @@ async function cloudPull(onNote){
   }
   await store.set(K_SEEN,JSON.stringify(app.seen));
 
+  try{
+    const pr=await sbRest('prefs?select=clock');
+    if(pr && pr[0] && (pr[0].clock|0)>app.clock){ app.clock=pr[0].clock|0; await store.set(K_CLOCK,String(app.clock)); }
+  }catch(e){}
+
   const rs=await sbAll('results?select=id,title,total,correct,elapsed_s,skills,finished_at&order=finished_at.desc',200);
   const byId=new Map(app.history.map(x=>[x.id||(x.title+'|'+x.at),x]));
   for(const r of rs){
@@ -3303,6 +3443,10 @@ async function cloudPull(onNote){
   }
   app.history=[...byId.values()].sort((a,b)=>b.at-a.at).slice(0,60);
   await store.set(K_HIST,JSON.stringify(app.history));
+
+  const rev=await sbAll('review_queue?select=question_id,step,due,misses,updated_at',300);
+  mergeReview(rev);
+  try{ await store.set(K_REV,JSON.stringify(app.review)); }catch(e){}
 
   note('Restoring answered questions…');
   const arch=await sbAll('answered_questions?select=question_id,test,domain,skill,difficulty,data',200);
