@@ -17,19 +17,35 @@ splits mid-token. Metadata is read by column position rather than gap width,
 which is what makes long domain names like *Standard English Conventions* come
 through intact.
 
-**Remembers what you have done.** Every answer is recorded against the College
-Board question ID. Re-import the same export, or a different one that overlaps,
-and it says how many you have already practised and offers to leave them out.
-Practice sets can include repeats, skip them, or drill only those.
+**Builds a real module, at the level you want.** Given exports covering all four
+domains it assembles a 27-question Reading and Writing module on the published
+blueprint: the College Board domain mix, the fixed order — Craft and Structure,
+Information and Ideas, Standard English Conventions, Expression of Ideas —
+grouped by skill and running easiest to hardest inside each domain, with
+Standard English Conventions ordered by difficulty alone.
 
-**Builds a real module.** Given exports covering all four domains it assembles a
-27-question Reading and Writing module on the published blueprint: the College
-Board domain mix, the fixed order — Craft and Structure, Information and Ideas,
-Standard English Conventions, Expression of Ideas — grouped by skill and running
-easiest to hardest inside each domain, with Standard English Conventions ordered
-by difficulty alone. 32 minutes, answers held to the end. Module 1, and both
-Module 2 difficulty bands. If the pool is short it says exactly which domains
-are missing instead of pretending.
+| Level | Mix | Mirrors |
+|---|---|---|
+| Easy | 55% easy, 35% medium, 10% hard | the easier second module |
+| Medium | 30 / 40 / 30 | the balanced first module everyone sits |
+| Hard | 0% easy, 20% medium, 80% hard | the hard second module |
+
+The clock defaults to the real 32 minutes and can be set to anything, or removed.
+If the pool is short it says exactly which domains are missing instead of
+pretending, and opens the custom builder so there is no dead end.
+
+**Remembers what you have done.** Every answer is recorded against the College
+Board question ID. Questions you have already practised are left out of new
+sets by default; you can include them, or drill only those. Re-import an
+overlapping export and it says how many repeats it found.
+
+**Shows where the points are going.** A progress page reports accuracy and pace
+by difficulty, domain and skill, run-by-run accuracy, a day streak, and the
+skills you are under 70% on — with one button to drill exactly those.
+
+**Keeps every question you have answered.** A searchable library of your
+practised questions, full text and official rationale included, filterable to
+the ones you got wrong or flagged, and re-runnable as a set.
 
 ## Layout
 
@@ -71,6 +87,9 @@ instead of inflating the counts.
 ## Sync model
 
 Local storage stays the source of truth; the app works with no account and no
-connection. When signed in, changes are also queued to Supabase and the queue
-survives being offline, a reload, or a closed tab. Signing in on a new device
-pulls prefs, progress, history, and any question bank not held locally.
+connection. Saving is automatic — there is no sync button. Changes are queued to
+Supabase and the queue survives being offline, a reload, or a closed tab; a
+request that can never succeed is discarded rather than blocking the ones behind
+it. Signing in on a new device pulls prefs, progress, history, and any question
+bank not held locally. Removing a set removes it from the account too, while
+keeping the answer history that came from it.
