@@ -766,14 +766,44 @@ function fmtTime(sec){sec=Math.max(0,Math.round(sec));const m=Math.floor(sec/60)
    ═══════════════════════════════════════════════════════════════ */
 const mem = new Map();
 
-/* Three drivers, tried in order. The artifact key/value store is preferred; if it is
-   absent or refuses a write (read-only preview, quota, rate limit) we fall back to
-   localStorage, and finally to memory so a failed save can never lose a parsed set. */
+/* Drivers, tried in order. IndexedDB comes first: it is the only browser store
+   with room for a real question bank — localStorage caps out around 5 MB, which
+   a couple of thousand questions blow straight past. The rest are fallbacks so a
+   parsed set is never lost, whatever the environment allows. */
 function lsWorks(){
   try{ const k='__bb_probe__'+Math.random(); localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }
   catch(e){ return false; }
 }
+const IDB_NAME='bb_store', IDB_SHELF='kv';
+let idbPromise=null;
+function idbOpen(){
+  if(idbPromise) return idbPromise;
+  idbPromise=new Promise((res,rej)=>{
+    let r;
+    try{ r=indexedDB.open(IDB_NAME,1); }catch(e){ return rej(e); }
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(IDB_SHELF)) r.result.createObjectStore(IDB_SHELF); };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error||new Error('IndexedDB refused to open'));
+    r.onblocked=()=>rej(new Error('IndexedDB is blocked by another tab'));
+  }).catch(e=>{ idbPromise=null; throw e; });
+  return idbPromise;
+}
+function idbRun(mode,fn){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_SHELF,mode);
+    const req=fn(tx.objectStore(IDB_SHELF));
+    tx.oncomplete=()=>res(req? req.result : undefined);
+    tx.onerror=()=>rej(tx.error||new Error('IndexedDB write failed'));
+    tx.onabort=()=>rej(tx.error||new Error('IndexedDB transaction aborted'));
+  }));
+}
 const DRIVERS=[];
+if(typeof indexedDB!=='undefined' && indexedDB){
+  DRIVERS.push({name:'indexeddb',
+    get:async k=>{ const v=await idbRun('readonly',s=>s.get(k)); return v==null? null : v; },
+    set:async (k,v)=>{ await idbRun('readwrite',s=>s.put(v,k)); return true; },
+    del:async k=>{ await idbRun('readwrite',s=>s.delete(k)); return true; }});
+}
 if(window.storage && window.storage.get && window.storage.set){
   DRIVERS.push({name:'artifact',
     get:async k=>{ const r=await window.storage.get(k,false); return r? r.value : null; },
@@ -804,7 +834,12 @@ const store = {
      the value will not survive a reload. */
   async set(k,v){
     for(const d of DRIVERS){
-      try{ if(await d.set(k,v)){ if(d.name!=='memory') mem.set(k,v); this.lastDriver=d.name; return d.name; } }
+      try{ if(await d.set(k,v)){
+        /* Mirror only small values; a whole question bank does not belong in
+           memory as well as on disk. */
+        if(d.name!=='memory'){ if(v.length<65536) mem.set(k,v); else mem.delete(k); }
+        this.lastDriver=d.name; return d.name;
+      } }
       catch(e){ console.warn('storage write failed on',d.name,e&&e.message); }
     }
     mem.set(k,v); this.lastDriver='memory'; return 'memory';
@@ -812,7 +847,37 @@ const store = {
   async del(k){ for(const d of DRIVERS){ try{ await d.del(k); }catch(e){} } mem.delete(k); return true; }
 };
 const K_INDEX='bb_sets_index', K_HIST='bb_history', K_PREFS='bb_prefs';
-const CHUNK_BYTES = 700_000;   // small enough for localStorage quotas and any per-key cap
+const HAS_IDB = DRIVERS[0] && DRIVERS[0].name==='indexeddb';
+/* IndexedDB is happy with multi-megabyte records; the fallbacks are not. */
+const CHUNK_BYTES = HAS_IDB ? 4_000_000 : 700_000;
+
+/* Ask the browser not to evict this data when space runs short. Installed web
+   apps are granted this; it is a no-op where unsupported. */
+async function claimPersistence(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      if(await navigator.storage.persisted()) return true;
+      return await navigator.storage.persist();
+    }
+  }catch(e){}
+  return false;
+}
+/* One-time move of anything an older build left in localStorage. */
+async function migrateFromLocalStorage(){
+  if(!HAS_IDB || typeof localStorage==='undefined') return 0;
+  let keys=[];
+  try{ keys=Object.keys(localStorage).filter(k=>k.startsWith('bb_')); }catch(e){ return 0; }
+  let moved=0;
+  for(const k of keys){
+    if(k==='bb_auth'||k==='bb_outbox'||k==='bb_outbox_seq'||k==='bb_pulled') continue;
+    try{
+      const existing=await DRIVERS[0].get(k);
+      if(existing==null){ await DRIVERS[0].set(k, localStorage.getItem(k)); moved++; }
+      localStorage.removeItem(k);
+    }catch(e){}
+  }
+  return moved;
+}
 
 async function loadIndex(){ try{ return JSON.parse(await store.get(K_INDEX)||'[]'); }catch(e){ return []; } }
 async function saveIndex(ix){ return await store.set(K_INDEX, JSON.stringify(ix)); }
@@ -825,10 +890,23 @@ async function persistSet(set){
     cur.push(q); size+=s;
   }
   if(cur.length) chunks.push(cur);
+
+  /* Write every chunk before touching the index, so a set is never listed with
+     only part of itself on disk. */
   let durable = true;
+  const written = [];
   for(let i=0;i<chunks.length;i++){
-    const where = await store.set(`bb_set_${set.id}_${i}`, JSON.stringify(chunks[i]));
+    const key = `bb_set_${set.id}_${i}`;
+    const where = await store.set(key, JSON.stringify(chunks[i]));
+    written.push(key);
     if(where==='memory') durable = false;
+  }
+  if(!durable){
+    /* Something refused the write. Verify what actually landed rather than
+       trusting the return value, then report honestly. */
+    let onDisk = 0;
+    for(const key of written){ try{ if(await DRIVERS[0].get(key)!=null) onDisk++; }catch(e){} }
+    console.warn(`storage: ${onDisk}/${written.length} chunks of “${set.name}” are on disk`);
   }
   const ix = await loadIndex();
   ix.unshift({id:set.id,name:set.name,createdAt:set.createdAt,count:set.questions.length,chunks:chunks.length,
@@ -1560,7 +1638,7 @@ async function handleFiles(files){
   await refreshLibrary();
   if(sessionOnly){
     const d=document.createElement('div'); d.className='warnbox';
-    d.innerHTML='<b>Saved for this session only.</b> This page cannot write to persistent storage here, so your sets are held in memory — everything works normally, but they will be gone if you reload. Downloading this file and opening it in a browser restores permanent saving.';
+    d.innerHTML='<b>This browser refused to store the questions.</b> Everything works for now, but the set will be gone if you reload. This usually means private browsing, or a full disk. Try a normal window, or free some space.';
     $('#errs').appendChild(d);
   }
   if(added) toast(added===1?'Set imported.':added+' sets imported.');
@@ -1600,7 +1678,7 @@ function removeSets(list){
   confirmSheet(
     one? 'Remove '+what+'?' : 'Remove '+what+'?',
     `${n} question${n===1?'':'s'} will be removed${cloud.on?' from this device and from your account':''}. `+
-    `Your answer history is kept, so anything you have already practised still counts. The original PDF is untouched.`,
+    `Anything you have already answered stays in Questions done — full text and rationale included — and still counts as practised. The original PDF is untouched.`,
     'Remove',
     async()=>{
       for(const s of list){ await deleteSet(s); app.selected.delete(s.id); }
@@ -2388,17 +2466,44 @@ document.addEventListener('click',e=>{
 /* ═══════════════════════════════════════════════════════════════
    7.  Results & review
    ═══════════════════════════════════════════════════════════════ */
+/* A question you have answered is kept forever, on its own, keyed by its
+   College Board id. Sets come and go; this does not. */
+const QKEY = id => 'bb_q_' + id;
+async function archiveQuestions(qs){
+  const fresh = [];
+  for(const q of qs){
+    try{
+      if(await store.get(QKEY(q.id)) != null) continue;   // already kept
+      await store.set(QKEY(q.id), JSON.stringify(q));
+      fresh.push(q);
+    }catch(e){ /* a question that will not store is still playable */ }
+  }
+  if(fresh.length) cloudPushArchive(fresh);
+  return fresh.length;
+}
+async function archivedQuestion(id){
+  try{
+    const raw = await store.get(QKEY(id));
+    return raw? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
 function mergeLog(rows){
   const by=new Map(app.log.map(r=>[r.n,r]));
   for(const r of rows) by.set(r.n,Object.assign(by.get(r.n)||{},r));
   app.log=[...by.values()].sort((a,b)=>b.at-a.at).slice(0,LOG_MAX);
 }
-/* Every question currently in the library, keyed by its College Board id. */
+/* Every question we can show: those in the library, plus the archive of
+   everything you have answered — including sets you have since removed. */
 async function questionIndex(){
   if(app.qIndex) return app.qIndex;
   const m=new Map();
   for(const meta of app.index){
     try{ for(const q of await loadSetQuestions(meta)) m.set(q.id,q); }catch(e){}
+  }
+  for(const r of app.log){
+    if(m.has(r.qid)) continue;
+    const q=await archivedQuestion(r.qid);
+    if(q) m.set(q.id,q);
   }
   app.qIndex=m; return m;
 }
@@ -2447,6 +2552,8 @@ async function finishExam(auto){
     seconds:Math.round(r.seconds||0), at:stamp}));
   mergeLog(fresh);
   await store.set(K_LOG,JSON.stringify(app.log));
+  await archiveQuestions(rows.filter(r=>r.answered).map(r=>r.q));
+  app.qIndex=null;
 
   renderReview('all');
   show('scr-review');
@@ -2652,6 +2759,7 @@ async function runJob(j){
   if(j.k==='set')       return sbRest('sets',         {method:'POST',body:[j.row],prefer:MERGE});
   if(j.k==='questions') return sbRest('questions',    {method:'POST',body:j.rows, prefer:MERGE});
   if(j.k==='attempts')  return sbRest('attempts',     {method:'POST',body:j.rows, prefer:MERGE});
+  if(j.k==='archive')   return sbRest('answered_questions',{method:'POST',body:j.rows, prefer:MERGE});
   if(j.k==='result')    return sbRest('results',      {method:'POST',body:[j.row],prefer:MERGE});
   if(j.k==='prefs')     return sbRest('prefs',        {method:'POST',body:[j.row],prefer:MERGE});
   if(j.k==='session')   return sbRest('session_state',{method:'POST',body:[j.row],prefer:MERGE});
@@ -2705,6 +2813,16 @@ function cloudPushSet(set){
     enqueue({k:'questions',rows});
   }
   if(cloud.on) flushOutbox().then(renderCloud).catch(()=>{});
+}
+function cloudPushArchive(qs){
+  if(!cloud.on || !qs.length) return;
+  for(let i=0;i<qs.length;i+=40){
+    enqueue({k:'archive',rows:qs.slice(i,i+40).map(q=>({
+      user_id:cloud.uid, question_id:q.id,
+      test:q.test||null, domain:q.domain||null, skill:q.skill||null, difficulty:q.difficulty||null,
+      data:q}))});
+  }
+  flushOutbox().then(renderCloud).catch(()=>{});
 }
 function cloudPushResult(res,rows,sessionId){
   if(!cloud.on) return;
@@ -2762,6 +2880,33 @@ async function cloudPull(onNote){
   app.history=[...byId.values()].sort((a,b)=>b.at-a.at).slice(0,60);
   await store.set(K_HIST,JSON.stringify(app.history));
 
+  note('Restoring answered questions…');
+  const arch=await sbAll('answered_questions?select=question_id,test,domain,skill,difficulty,data',200);
+  const meta=new Map();
+  for(const r of arch){
+    meta.set(r.question_id,r);
+    try{ if(await store.get(QKEY(r.question_id))==null) await store.set(QKEY(r.question_id),JSON.stringify(r.data)); }
+    catch(e){}
+  }
+  app.qIndex=null;
+
+  /* Rebuild the per-answer log, so progress and the practised library are
+     whole on a device that has never seen these questions. */
+  const titles=new Map(rs.map(r=>[r.id,r.title]));
+  const at=await sbAll('attempts?select=id,question_id,set_id,session_id,chosen,correct,marked,seconds,answered_at&order=answered_at.desc',500);
+  mergeLog(at.map(r=>{
+    const m=meta.get(r.question_id)||{};
+    const row={n:r.id, qid:r.question_id, sid:r.session_id||'',
+      given:r.chosen||'', correct:!!r.correct, marked:!!r.marked,
+      seconds:r.seconds||0, at:new Date(r.answered_at).getTime()};
+    /* Only set what we actually know, so a sparse cloud row cannot blank a
+       richer local one. */
+    if(titles.get(r.session_id)) row.title=titles.get(r.session_id);
+    for(const k of ['test','domain','skill','difficulty']) if(m[k]) row[k]=m[k];
+    return row;
+  }));
+  await store.set(K_LOG,JSON.stringify(app.log));
+
   const sets=await sbAll('sets?select=id,name,tests,question_count,created_at&order=created_at.desc',200);
   const have=new Set(app.index.map(s=>s.id));
   const going=pendingDeletes();
@@ -2816,6 +2961,10 @@ async function cloudBackfill(){
       cloudPushSet({id:meta.id,name:meta.name,createdAt:meta.createdAt,tests:meta.tests,questions:qs});
     }catch(e){ /* a set that will not load locally is skipped */ }
   }
+  const held=[];
+  for(const r of app.log){ const q=await archivedQuestion(r.qid); if(q) held.push(q); }
+  cloudPushArchive(held);
+
   const seenRows=Object.entries(app.seen).map(([qid,v])=>({
     user_id:cloud.uid, id:'local:'+qid, question_id:qid, session_id:'local',
     correct:(v.c||0)>0, seconds:null}));
@@ -3050,7 +3199,7 @@ async function renderDone(){
         <span class="idx">${i+1}</span>
         <span class="ttl">${esc(r.skill||r.domain||'Question')} · ${esc(r.difficulty||'')}</span>
         <span class="ans">${esc(r.given||'—')}</span></summary>
-      <div class="body"><p class="hint">This question came from a set you have since removed, so its text is no longer stored.</p>
+      <div class="body"><p class="hint">This one was answered before the app began keeping a permanent copy, and its set has since been removed. Re-import that export and it will fill in.</p>
       <div style="margin-top:10px;font-size:12.5px;color:var(--ink-3)">Question ID ${esc(r.qid)} · ${new Date(r.at).toLocaleDateString()}</div></div></details>`;
     const head=plain((Q.stem[0]&&Q.stem[0].text)||(Q.passage[0]&&Q.passage[0].text)||'Question');
     return `<details class="qcard ${cls}">
@@ -3117,6 +3266,9 @@ $('#btnDonePractise').addEventListener('click',async()=>{
 (async function boot(){
   try{ const p=JSON.parse(await store.get(K_PREFS)||'null'); if(p) app.prefs=Object.assign(app.prefs,p); }catch(e){}
   cloudLoad();
+  claimPersistence();
+  const moved=await migrateFromLocalStorage();
+  if(moved) console.info('storage: moved',moved,'keys out of localStorage into IndexedDB');
   applyPrefs();
   await refreshLibrary();
   renderCloud();
