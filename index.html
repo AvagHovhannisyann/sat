@@ -40,6 +40,29 @@
   --split:50%;
   --font:"Avenir Next","Avenir","Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  /* dashboard surface */
+  --d-bg:#fbfcfe;
+  --d-side:#ffffff;
+  --d-line:#e8ecf3;
+  --d-line-2:#eef1f6;
+  --d-ink:#0f172a;
+  --d-ink-2:#475569;
+  --d-ink-3:#8a94a6;
+  --d-accent:#2563eb;
+  --d-accent-ink:#1d4ed8;
+  --d-accent-wash:#eef4ff;
+  --d-violet:#7c6cf0;
+  --d-violet-wash:#f1effe;
+  --d-green:#0f9d58;
+  --d-green-wash:#e8f6ef;
+  --d-amber:#e8912a;
+  --d-amber-wash:#fdf2e3;
+  --d-r:16px;
+  --d-r-sm:11px;
+  --d-shadow:0 1px 2px rgba(15,23,42,.05);
+  --d-shadow-2:0 4px 16px -6px rgba(15,23,42,.13);
+  --side-w:216px;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -76,6 +99,8 @@ body.solid-rules .rule{background:#d0d0d0;background-image:none;height:1px}
 .sub{color:var(--ink-2);font-size:15px;margin:0 0 26px;line-height:1.55;max-width:64ch}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border-radius:999px;padding:12px 24px;font-weight:600;font-size:15px;transition:filter .15s,transform .05s,background .15s}
+.btn{white-space:nowrap}
+.btn>svg{width:18px;height:18px;flex:none}
 .btn:active{transform:translateY(1px)}
 .btn-primary{background:var(--blue);color:#fff}
 .btn-primary:hover{filter:brightness(1.1)}
@@ -133,6 +158,248 @@ details.adv>div:last-child{padding:0 18px 18px}
 .spark-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:7px}
 .donebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .donebar .grow{flex:1;min-width:190px}
+/* ══════════════════ DASHBOARD SHELL ══════════════════ */
+#scr-lib.on{display:block}
+.lib{background:var(--d-bg)}
+.shell{display:flex;min-height:100vh;align-items:stretch}
+
+.side{width:var(--side-w);flex:none;background:var(--d-side);border-right:1px solid var(--d-line);
+  padding:20px 14px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.side-logo{display:flex;align-items:center;gap:10px;padding:0 8px}
+.side-logo i{width:34px;height:34px;border-radius:10px;background:var(--d-accent);color:#fff;display:grid;
+  place-items:center;font-style:normal;font-weight:700;font-size:18px;flex:none}
+.side-logo b{font-size:15px;font-weight:650;letter-spacing:-.01em;color:var(--d-ink)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border:0;border-radius:10px;
+  background:none;font:inherit;font-size:14px;color:var(--d-ink-2);cursor:pointer;text-align:left;
+  transition:background .13s,color .13s}
+.nav button svg{width:18px;height:18px;flex:none;opacity:.72}
+.nav button:hover{background:var(--d-line-2);color:var(--d-ink)}
+.nav button.sel{background:var(--d-accent-wash);color:var(--d-accent-ink);font-weight:600}
+.nav button.sel svg{opacity:1;color:var(--d-accent)}
+.nav button:focus-visible{outline:2px solid var(--d-accent);outline-offset:1px}
+.side-foot{margin-top:auto;border:1px solid var(--d-line);border-radius:var(--d-r-sm);padding:14px;
+  background:linear-gradient(170deg,#f7f9ff,#fff)}
+.side-foot b{display:block;font-size:13.5px;line-height:1.35;color:var(--d-ink);margin-bottom:5px}
+.side-foot span{font-size:12px;color:var(--d-ink-3);line-height:1.45;display:block}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 30px;background:var(--d-side);
+  border-bottom:1px solid var(--d-line);position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.topbar h1{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0;color:var(--d-ink)}
+.tagpill{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--d-accent-ink);
+  background:var(--d-accent-wash);padding:5px 9px;border-radius:6px;white-space:nowrap}
+.gsearch{margin-left:auto;position:relative;flex:0 1 340px;min-width:170px}
+.gsearch svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--d-ink-3)}
+.gsearch input{width:100%;padding:9px 12px 9px 35px;border:1px solid var(--d-line);border-radius:9px;
+  background:var(--d-bg);font:inherit;font-size:13.5px;color:var(--d-ink)}
+.gsearch input::placeholder{color:var(--d-ink-3)}
+.gsearch input:focus{outline:0;border-color:var(--d-accent);background:#fff;box-shadow:0 0 0 3px var(--d-accent-wash)}
+.who{display:flex;align-items:center;gap:9px;min-width:0}
+.avat{width:32px;height:32px;border-radius:50%;background:var(--d-accent-wash);color:var(--d-accent-ink);
+  display:grid;place-items:center;font-weight:700;font-size:13.5px;flex:none}
+.who span{font-size:12.5px;color:var(--d-ink-2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.canvas{padding:26px 30px 60px;max-width:1180px;width:100%}
+
+/* ── hero ── */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:34px;align-items:center;
+  border:1px solid var(--d-line);border-radius:22px;padding:34px 36px;margin-bottom:20px;
+  background:linear-gradient(135deg,#f2f6ff 0%,#f7f9ff 45%,#fdfdff 100%);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-70px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle at 32% 32%,rgba(124,108,240,.14),rgba(37,99,235,.09) 45%,transparent 70%);
+  pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.hero-copy h2{font-size:33px;line-height:1.14;letter-spacing:-.03em;font-weight:700;margin:0 0 12px;color:var(--d-ink)}
+.hero-copy p{font-size:14.5px;line-height:1.6;color:var(--d-ink-2);margin:0 0 22px;max-width:46ch}
+.hero-acts{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hero-acts .hint{margin:0;font-size:13px;color:var(--d-ink-3)}
+
+.drop{border:1.5px dashed #bcd0f5;border-radius:var(--d-r);background:rgba(255,255,255,.72);
+  padding:30px 24px;text-align:center;transition:border-color .15s,background .15s,transform .15s}
+.drop.over{border-color:var(--d-accent);background:#fff;transform:translateY(-1px)}
+.drop .upload-icon{width:56px;height:56px;padding:15px;border-radius:15px;background:var(--d-accent-wash);
+  color:var(--d-accent);margin:0 auto 14px;display:block}
+.drop h2{font-size:15px;font-weight:600;margin:0 0 5px;color:var(--d-ink)}
+.drop p{font-size:13px;color:var(--d-ink-3);margin:0 0 15px;line-height:1.5}
+
+/* ── account + sync ── */
+.acct{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid var(--d-line);
+  border-radius:var(--d-r);padding:15px 20px;margin-bottom:20px;box-shadow:var(--d-shadow)}
+.acct .avat{width:38px;height:38px;font-size:15px}
+.acct-txt{flex:1;min-width:160px;display:flex;flex-direction:column;gap:3px}
+.acct-txt b{font-size:14px;font-weight:600;color:var(--d-ink);word-break:break-word}
+.acct-txt .st{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--d-ink-3)}
+.acct-txt .st.ok{color:var(--d-green)}
+.acct-txt .st svg{width:14px;height:14px}
+
+/* ── stats ── */
+.statrow{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:14px;margin-bottom:26px}
+.stat{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--d-line);
+  border-radius:var(--d-r);padding:16px 18px;box-shadow:var(--d-shadow)}
+.stat .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none}
+.stat .ic svg{width:21px;height:21px}
+.stat .ic.b{background:var(--d-accent-wash);color:var(--d-accent)}
+.stat .ic.g{background:var(--d-green-wash);color:var(--d-green)}
+.stat .ic.a{background:var(--d-amber-wash);color:var(--d-amber)}
+.stat .ic.v{background:var(--d-violet-wash);color:var(--d-violet)}
+.stat .tx{min-width:0}
+.lib .stat .tx,.lib .stat .tx em,.lib .stat .tx i{text-transform:none;letter-spacing:normal}
+.stat .tx em{display:block;font-style:normal;font-size:12.5px;font-weight:500;color:var(--d-ink-2);margin-bottom:1px}
+.stat .tx b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;color:var(--d-ink);
+  font-variant-numeric:tabular-nums;line-height:1.15}
+.stat .tx i{font-style:normal;font-size:11.5px;font-weight:400;color:var(--d-ink-3);display:block;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── section heads ── */
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 13px}
+.lib .sec-head h3{font-size:17px;font-weight:650;letter-spacing:-.015em;margin:0;color:var(--d-ink);text-transform:none}
+.sec-tools{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.searchbox{display:flex;align-items:center;gap:8px;border:1px solid var(--d-line);border-radius:9px;
+  padding:0 11px;background:#fff;height:36px}
+.searchbox svg{width:15px;height:15px;color:var(--d-ink-3);flex:none}
+.searchbox input{border:0;outline:0;font:inherit;font-size:13.5px;background:none;width:150px;color:var(--d-ink)}
+.searchbox:focus-within{border-color:var(--d-accent);box-shadow:0 0 0 3px var(--d-accent-wash)}
+.vtog{display:flex;border:1px solid var(--d-line);border-radius:9px;overflow:hidden;background:#fff;height:36px}
+.vtog button{border:0;background:none;padding:0 11px;cursor:pointer;color:var(--d-ink-3);display:grid;place-items:center}
+.vtog button svg{width:16px;height:16px}
+.vtog button.sel{background:var(--d-accent-wash);color:var(--d-accent-ink)}
+
+/* ── cards / rows ── */
+.card{background:#fff;border:1px solid var(--d-line);border-radius:var(--d-r);overflow:hidden;
+  box-shadow:var(--d-shadow);margin-bottom:26px}
+.card .row{display:flex;align-items:center;gap:13px;padding:14px 18px;border-bottom:1px solid var(--d-line-2);
+  cursor:pointer;transition:background .12s}
+.card .row:last-child{border-bottom:0}
+.card .row:hover{background:#fafbfe}
+.card .row .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.card .row .nm b{font-size:14px;font-weight:600;color:var(--d-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .row .nm span{font-size:12.5px;color:var(--d-ink-3)}
+.card .empty{padding:0;border:0}
+
+.setico{width:38px;height:38px;border-radius:10px;background:var(--d-accent-wash);color:var(--d-accent);
+  display:grid;place-items:center;flex:none}
+.setico svg{width:18px;height:18px}
+.pill{font-size:12px;font-weight:600;color:var(--d-ink-2);background:var(--d-line-2);border-radius:20px;
+  padding:4px 10px;white-space:nowrap;flex:none}
+.pill.donep{background:var(--d-green-wash);color:var(--d-green)}
+.pill.warnp{background:var(--d-amber-wash);color:var(--d-amber)}
+
+/* grid view for sets */
+.card.grid{background:none;border:0;box-shadow:none;overflow:visible;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:14px}
+.card.grid .row{border:1px solid var(--d-line);border-radius:var(--d-r);background:#fff;flex-direction:column;
+  align-items:flex-start;gap:11px;padding:17px;box-shadow:var(--d-shadow)}
+.card.grid .row:hover{box-shadow:var(--d-shadow-2)}
+.card.grid .row .nm b{white-space:normal}
+.card.grid .empty{grid-column:1/-1}
+
+/* empty states */
+.blank{border:1.5px dashed var(--d-line);border-radius:var(--d-r);background:#fff;padding:30px 26px;
+  display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:26px}
+.blank .bico{width:64px;height:64px;border-radius:16px;background:var(--d-accent-wash);color:var(--d-accent);
+  display:grid;place-items:center;flex:none}
+.blank .bico svg{width:30px;height:30px}
+.blank .btx{flex:1;min-width:200px}
+.blank .btx b{display:block;font-size:15.5px;font-weight:650;color:var(--d-ink);margin-bottom:4px}
+.blank .btx span{font-size:13.5px;color:var(--d-ink-3);line-height:1.5}
+
+/* attempts table */
+.attempts thead th{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:650;
+  color:var(--d-ink-3);text-align:left;padding:11px 16px;border-bottom:1px solid var(--d-line);background:#fcfdff}
+.attempts{width:100%;border-collapse:collapse}
+.attempts td{padding:13px 16px;border-bottom:1px solid var(--d-line-2);font-size:13.5px;color:var(--d-ink-2);
+  vertical-align:middle}
+.attempts tr:last-child td{border-bottom:0}
+.attempts tr:hover td{background:#fafbfe}
+.attempts .t-nm{display:flex;align-items:center;gap:11px}
+.attempts .t-nm b{font-size:14px;font-weight:600;color:var(--d-ink);display:block}
+.attempts .t-nm span{font-size:12px;color:var(--d-ink-3)}
+.attempts .prg{display:flex;align-items:center;gap:9px}
+.attempts .track{width:82px;height:6px;border-radius:99px;background:var(--d-line-2);overflow:hidden;flex:none}
+.attempts .track i{display:block;height:100%;border-radius:99px;background:var(--d-accent)}
+.scorepill{display:inline-grid;place-items:center;min-width:52px;padding:6px 10px;border-radius:20px;
+  font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.scorepill.hi{background:var(--d-green-wash);color:var(--d-green)}
+.scorepill.mid{background:var(--d-accent-wash);color:var(--d-accent-ink)}
+.scorepill.lo{background:var(--d-amber-wash);color:var(--d-amber)}
+.tfoot{padding:13px;text-align:center;border-top:1px solid var(--d-line-2)}
+
+/* bottom CTA */
+.cta{display:flex;align-items:center;gap:18px;flex-wrap:wrap;border:1px solid var(--d-line);
+  border-radius:var(--d-r);padding:22px 26px;margin-bottom:26px;
+  background:linear-gradient(120deg,#f2f6ff,#faf9ff)}
+.cta .cico{width:52px;height:52px;border-radius:14px;background:#fff;color:var(--d-accent);
+  display:grid;place-items:center;flex:none;box-shadow:var(--d-shadow)}
+.cta .cico svg{width:24px;height:24px}
+.cta .ctx{flex:1;min-width:200px}
+.cta .ctx b{display:block;font-size:16px;font-weight:650;color:var(--d-ink);margin-bottom:3px}
+.cta .ctx span{font-size:13.5px;color:var(--d-ink-2)}
+
+/* sticky selection bar */
+.lib .bar{position:sticky;bottom:0;display:flex;align-items:center;gap:11px;padding:13px 18px;background:#fff;
+  border:1px solid var(--d-line);border-radius:var(--d-r);box-shadow:var(--d-shadow-2);margin-bottom:26px}
+
+/* mobile nav trigger */
+.navtog{display:none;border:1px solid var(--d-line);background:#fff;border-radius:9px;width:38px;height:38px;
+  cursor:pointer;color:var(--d-ink-2);place-items:center}
+.navtog svg{width:19px;height:19px}
+.scrim{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:39}
+.scrim.on{display:block}
+
+@media(max-width:1080px){
+  .hero{grid-template-columns:1fr;padding:28px}
+  .hero-copy h2{font-size:28px}
+  .statrow{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:860px){
+  .side{position:fixed;left:0;top:0;bottom:0;z-index:40;transform:translateX(-100%);
+    transition:transform .22s ease;box-shadow:0 0 34px rgba(15,23,42,.16)}
+  .side.on{transform:none}
+  .navtog{display:grid}
+  .topbar{padding:12px 16px;gap:11px}
+  .topbar h1{font-size:18px}
+  .gsearch{order:9;flex:1 0 100%;margin-left:0}
+  .canvas{padding:18px 16px 60px}
+  .who span{display:none}
+  .attempts thead{display:none}
+  .attempts tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:14px 16px;
+    border-bottom:1px solid var(--d-line-2)}
+  .attempts td{border:0;padding:0;display:flex;align-items:center}
+  .attempts td[data-l]::before{content:attr(data-l);font-size:11.5px;color:var(--d-ink-3);margin-right:7px;
+    text-transform:uppercase;letter-spacing:.04em}
+  .attempts td.t-first{grid-column:1/-1}
+  .attempts td.t-act{grid-column:1/-1;margin-top:4px}
+  .attempts td.t-act .btn{width:100%}
+}
+@media(max-width:620px){
+  .lib .card .row{flex-wrap:wrap;row-gap:9px}
+  .lib .card .row .nm{flex:1 1 100%;order:3}
+  .lib .card .row .nm b{white-space:normal}
+  .lib .card .row .setico{order:1}
+  .lib .card .row .chk{order:0}
+  .lib .card .row .pill,.lib .card .row .rowdel{order:4}
+  .attempts tr{grid-template-columns:1fr 1fr}
+  .attempts td[data-l]{flex-direction:column;align-items:flex-start;gap:2px}
+  .attempts td[data-l]::before{margin:0}
+  .lib .bar{flex-wrap:wrap}
+  .lib .bar .btn{flex:1}
+}
+@media(max-width:560px){
+  .statrow{grid-template-columns:1fr!important}
+  .hero{padding:22px 18px;border-radius:var(--d-r)}
+  .hero-copy h2{font-size:24px}
+  .blank{padding:24px 18px}
+  .btn{min-height:44px}
+}
+
+.dangerzone{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px;padding:16px 18px;
+  border:1px solid var(--line-soft);border-radius:14px;background:#fff}
+.dangerzone>div{flex:1;min-width:220px;display:flex;flex-direction:column;gap:3px}
+.dangerzone b{font-size:14.5px}
+.dangerzone span{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-danger:hover{filter:brightness(.93)}
 .rowdel{flex:none;width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:9px;
   background:transparent;color:var(--ink-3);cursor:pointer;opacity:.5;transition:opacity .12s,background .12s,color .12s}
 .rowdel svg{width:17px;height:17px}
@@ -452,51 +719,101 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
 
 <!-- ══════════════════════════ LIBRARY ══════════════════════════ -->
 <section id="scr-lib" class="screen on lib">
-  <div class="wrap">
-    <div class="brand"><h1>Bluebook Practice</h1><span class="tag">Question Bank Player</span></div>
-    <p class="sub">Import PDFs exported from the College Board SAT Question Bank. Each file becomes a full digital‑SAT test interface — passages, answer choices, cross‑out, highlighting, a timer, and the official rationales for review.</p>
-
-    <div class="drop" id="drop">
-      <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
-      <h2>Upload a question bank export</h2>
-      <p>Drag PDFs here, or choose files. Several files at once is fine.</p>
-      <button class="btn btn-primary" id="btnPick">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Upload PDF
-      </button>
-      <input type="file" id="file" accept="application/pdf,.pdf" multiple hidden>
-    </div>
-
-    <div class="prog hidden" id="prog">
-      <div class="lbl"><span id="progLabel">Reading pages…</span><span id="progPct">0%</span></div>
-      <div class="track"><i id="progBar"></i></div>
-    </div>
-    <div id="errs"></div>
-    <div id="cloudBox"></div>
-    <div id="resumeBox"></div>
-
-    <div class="sec-head">
-      <h3>Your question sets</h3>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <span class="searchbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg><input id="setSearch" type="search" placeholder="Filter sets" autocomplete="off"></span>
-        <button class="btn-quiet" id="btnClearSel">Clear selection</button>
+  <div class="shell">
+    <div class="scrim" id="scrim"></div>
+    <aside class="side" id="side">
+      <div class="side-logo"><i>B</i><b>Bluebook</b></div>
+      <nav class="nav" id="nav" aria-label="Sections"><button data-nav="dash" class="sel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg><span>Dashboard</span></button><button data-nav="sets" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="14" height="18" rx="2"/><path d="M8 8h6M8 12h6M8 16h4"/></svg><span>Question Sets</span></button><button data-nav="practice" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5A2.5 2.5 0 0 1 5.5 3H11v18H5.5A2.5 2.5 0 0 1 3 18.5z"/><path d="M21 5.5A2.5 2.5 0 0 0 18.5 3H13v18h5.5A2.5 2.5 0 0 0 21 18.5z"/></svg><span>Practice</span></button><button data-nav="attempts" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg><span>Attempts</span></button><button data-nav="analytics" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg><span>Analytics</span></button><button data-nav="settings" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg><span>Settings</span></button></nav>
+      <div class="side-foot">
+        <b>Study smarter.<br>Score higher.</b>
+        <span>Every question you answer is kept — with its rationale — even if you remove the set.</span>
       </div>
-    </div>
-    <div class="card" id="sets"><div class="empty">No sets yet — upload a PDF to begin.</div></div>
+    </aside>
 
-    <div class="sec-head"><h3>Recent attempts</h3>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn-quiet" id="btnStats">Progress</button>
-        <button class="btn-quiet" id="btnPractised">Questions done</button>
-        <button class="btn-quiet hidden" id="btnClearHist">Clear history</button>
+    <div class="main">
+      <header class="topbar">
+        <button class="navtog" id="navTog" aria-label="Open navigation" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <h1>Bluebook Practice</h1>
+        <span class="tagpill">Question Bank Player</span>
+        <div class="gsearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="gSearch" type="search" placeholder="Search question sets, attempts…" autocomplete="off" aria-label="Search sets and attempts">
+        </div>
+        <div class="who" id="whoBox"></div>
+      </header>
+
+      <div class="canvas">
+        <div class="hero">
+          <div class="hero-copy">
+            <h2>Bring your SAT materials to life.</h2>
+            <p>Import PDFs exported from the College Board SAT Question Bank. Each file becomes a full digital‑SAT interface — passages, answer choices, cross‑out, highlighting, a timer, and the official rationales for review.</p>
+            <div class="hero-acts">
+              <button class="btn btn-primary" id="btnPick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Upload PDF</button>
+              <p class="hint">Drag PDFs here, or choose files.</p>
+            </div>
+          </div>
+          <div class="drop" id="drop">
+            <span class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg></span>
+            <h2>Drag PDFs here, or choose files.</h2>
+            <p>Several files at once is fine.</p>
+            <button class="btn btn-ghost" id="btnPick2">Choose files</button>
+            <input type="file" id="file" accept="application/pdf,.pdf" multiple hidden>
+          </div>
+        </div>
+
+        <div class="prog hidden" id="prog">
+          <div class="lbl"><span id="progLabel">Reading pages…</span><span id="progPct">0%</span></div>
+          <div class="track"><i id="progBar"></i></div>
+        </div>
+        <div id="errs"></div>
+        <div id="cloudBox"></div>
+        <div id="resumeBox"></div>
+
+        <div class="statrow" id="statRow"></div>
+
+        <div class="sec-head" id="anchor-sets">
+          <h3>Your question sets</h3>
+          <div class="sec-tools">
+            <span class="searchbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="setSearch" type="search" placeholder="Search your sets…" autocomplete="off" aria-label="Filter sets"></span>
+            <div class="vtog" role="group" aria-label="View">
+              <button data-view="list" class="sel" aria-label="List view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
+              <button data-view="grid" aria-label="Grid view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button>
+            </div>
+            <button class="btn-quiet" id="btnClearSel">Clear selection</button>
+          </div>
+        </div>
+        <div class="card" id="sets"></div>
+
+        <div class="sec-head" id="anchor-attempts"><h3>Recent attempts</h3>
+          <div class="sec-tools">
+            <button class="btn-quiet" id="btnStats">Progress</button>
+            <button class="btn-quiet" id="btnPractised">Questions done</button>
+            <button class="btn-quiet hidden" id="btnClearHist">Clear history</button>
+          </div>
+        </div>
+        <div class="card" id="hist"></div>
+
+        <div class="cta">
+          <span class="cico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg></span>
+          <div class="ctx"><b>Ready to start practising?</b>
+            <span id="ctaSub">Select a set above, then set up a session.</span></div>
+          <button class="btn btn-primary" id="btnCta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Set up practice</button>
+        </div>
+
+        <div class="dangerzone" id="anchor-settings">
+          <div>
+            <b>Start over</b>
+            <span>Removes every question set, all your answers, your progress and your history — on this device and from your account. It cannot be undone.</span>
+          </div>
+          <button class="btn btn-danger" id="btnReset">Reset everything</button>
+        </div>
+
+        <div class="bar">
+          <span id="selInfo" style="font-size:13.5px;color:var(--d-ink-3);margin-right:auto"></span>
+          <button class="btn btn-ghost" id="btnDelete" disabled>Delete</button>
+          <button class="btn btn-primary" id="btnBuild" disabled>Set up practice</button>
+        </div>
       </div>
-    </div>
-    <div class="card" id="hist"><div class="empty">Nothing yet.</div></div>
-
-    <div class="bar">
-      <span id="selInfo" style="font-size:13.5px;color:var(--ink-3);margin-right:auto"></span>
-      <button class="btn btn-ghost" id="btnDelete" disabled>Delete</button>
-      <button class="btn btn-primary" id="btnBuild" disabled>Set up practice</button>
     </div>
   </div>
 </section>
@@ -1526,6 +1843,8 @@ async function refreshLibrary(){
   try{ app.log=JSON.parse(await store.get(K_LOG)||'[]'); }catch(e){ app.log=[]; }
   renderSets();
   renderHistory();
+  renderStatRow();
+  renderWho();
   await renderResume();
   updateSelBar();
   renderCloud();
@@ -1534,12 +1853,32 @@ function renderSets(){
   const box=$('#sets');
   const f=app.filter.trim().toLowerCase();
   const list=f? app.index.filter(s=>s.name.toLowerCase().includes(f)) : app.index;
-  if(!app.index.length){ box.innerHTML='<div class="empty">No sets yet — upload a PDF to begin.</div>'; return; }
-  if(!list.length){ box.innerHTML='<div class="empty">No set name matches “'+esc(app.filter)+'”.</div>'; return; }
+  box.classList.toggle('grid', app.setView==='grid');
+  if(!app.index.length){
+    box.className='blank'; box.innerHTML=
+      `<span class="bico">${D_ICON.box}</span>
+       <span class="btx"><b>No sets yet — upload a PDF to begin.</b>
+         <span>Upload your first question bank export to start practising.</span></span>
+       <button class="btn btn-primary" data-up>${D_ICON.up} Upload PDF</button>`;
+    const u=box.querySelector('[data-up]'); if(u) u.addEventListener('click',()=>$('#file').click());
+    return;
+  }
+  box.className='card'+(app.setView==='grid'?' grid':'');
+  if(!list.length){
+    box.className='blank'; box.innerHTML=
+      `<span class="bico">${D_ICON.box}</span>
+       <span class="btx"><b>Nothing matches “${esc(app.filter)}”.</b>
+         <span>Try a different word, or clear the search to see all ${app.index.length} sets.</span></span>
+       <button class="btn btn-ghost" data-clr>Clear search</button>`;
+    const c=box.querySelector('[data-clr]');
+    if(c) c.addEventListener('click',()=>{ $('#setSearch').value=''; app.filter=''; renderSets(); });
+    return;
+  }
   box.innerHTML=list.map(s=>{
     const done=(s.ids||[]).filter(id=>app.seen[id]).length;
     return `<label class="row">
       <input type="checkbox" class="chk" data-id="${esc(s.id)}" ${app.selected.has(s.id)?'checked':''}>
+      <span class="setico">${D_ICON.set}</span>
       <span class="nm"><b>${esc(s.name)}</b><span>${s.count} question${s.count===1?'':'s'} · ${(s.tests||[]).join(' · ')||'SAT'} · added ${new Date(s.createdAt).toLocaleDateString()}</span></span>
       ${s.ephemeral?'<span class="pill warnp">Session only</span>':''}
       ${done?`<span class="pill donep">${done} done</span>`:''}
@@ -1556,17 +1895,91 @@ function renderSets(){
     removeSets(app.index.filter(s=>s.id===b.dataset.del));
   }));
 }
+const D_ICON={
+  set:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="14" height="18" rx="2"/><path d="M8 8h6M8 12h6M8 16h4"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><path d="M2 8h20v-.5A2.5 2.5 0 0 0 19.5 5h-15A2.5 2.5 0 0 0 2 7.5z"/><path d="M10 12h4"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 1.8"/></svg>',
+  trend:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5 9 10l4 4 7.5-7.5"/><path d="M15 6.5h5.5V12"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>'
+};
+
+/* Every figure here is derived from stored data — nothing is hard-coded. */
+function renderStatRow(){
+  const box=$('#statRow'); if(!box) return;
+  const runs=app.history.length;
+  const tot=app.history.reduce((a,x)=>a+(x.total||0),0);
+  const cor=app.history.reduce((a,x)=>a+(x.correct||0),0);
+  const secs=app.history.reduce((a,x)=>a+(x.seconds||0),0);
+  const cards=[
+    {ic:'b', svg:D_ICON.set,   lbl:'Question sets',   val:app.index.length,
+     sub:app.index.length===1?'Set you have uploaded':'Sets you have uploaded'},
+    {ic:'g', svg:D_ICON.book,  lbl:'Practice sessions', val:runs,
+     sub:runs?'Finished runs':'None finished yet'}
+  ];
+  /* Only shown once there is something real to average or total. */
+  if(tot) cards.push({ic:'a', svg:D_ICON.trend, lbl:'Average score',
+     val:Math.round(cor/tot*100)+'%', sub:`${cor} of ${tot} correct`});
+  if(secs) cards.push({ic:'v', svg:D_ICON.clock, lbl:'Study time',
+     val:fmtTime(secs), sub:'Total time in practice'});
+  if(app.log.length && cards.length<4) cards.push({ic:'v', svg:D_ICON.book,
+     lbl:'Questions answered', val:app.log.length, sub:'Kept with rationales'});
+  box.innerHTML=cards.map(c=>`<div class="stat"><span class="ic ${c.ic}">${c.svg}</span>
+    <span class="tx"><em>${c.lbl}</em><b>${c.val}</b><i>${esc(c.sub)}</i></span></div>`).join('');
+  box.style.setProperty('--n', String(Math.min(cards.length,4)));
+}
+
+function renderWho(){
+  const box=$('#whoBox'); if(!box) return;
+  const em=cloud.on&&cloud.email? cloud.email : '';
+  box.innerHTML = em
+    ? `<span class="avat">${esc(em[0].toUpperCase())}</span><span title="${esc(em)}">${esc(em)}</span>`
+    : `<button class="btn-quiet" id="whoSignIn">Sign in</button>`;
+  const b=$('#whoSignIn'); if(b) b.addEventListener('click',()=>{ const t=$('#btnSignIn'); if(t) t.click(); });
+}
+
 function renderHistory(){
-  const h=$('#hist');
+  const box=$('#hist');
   $('#btnClearHist').classList.toggle('hidden', !app.history.length);
-  if(!app.history.length){ h.innerHTML='<div class="empty">Nothing yet.</div>'; return; }
-  h.innerHTML=app.history.slice(0,12).map(a=>{
+  const f=(app.filter||'').trim().toLowerCase();
+  const list=f? app.history.filter(a=>(a.title||'').toLowerCase().includes(f)) : app.history;
+
+  if(!app.history.length){
+    box.className='blank';
+    box.innerHTML=`<span class="bico">${D_ICON.book}</span>
+      <span class="btx"><b>No attempts yet.</b>
+        <span>Finish a practice session and it will appear here with your score and pace.</span></span>`;
+    return;
+  }
+  if(!list.length){
+    box.className='blank';
+    box.innerHTML=`<span class="bico">${D_ICON.book}</span>
+      <span class="btx"><b>No attempt matches “${esc(app.filter)}”.</b>
+        <span>${app.history.length} attempt${app.history.length===1?'':'s'} in total.</span></span>`;
+    return;
+  }
+  box.className='card';
+  const rows=list.slice(0,8).map(a=>{
     const pct=Math.round(a.correct/Math.max(1,a.total)*100);
-    return `<div class="row">
-      <span class="nm"><b>${esc(a.title)}</b><span>${new Date(a.at).toLocaleString()} · ${a.total} questions · ${fmtTime(a.seconds)}</span></span>
-      <span class="pill">${a.correct}/${a.total} · ${pct}%</span>
-    </div>`;
+    const cls=pct>=80?'hi':pct>=60?'mid':'lo';
+    const d=new Date(a.at);
+    return `<tr>
+      <td class="t-first"><span class="t-nm"><span class="setico">${D_ICON.set}</span>
+        <span><b>${esc(a.title)}</b><span>${a.total} question${a.total===1?'':'s'}</span></span></span></td>
+      <td data-l="Date">${d.toLocaleDateString()}<span style="color:var(--d-ink-3)">&nbsp;${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></td>
+      <td data-l="Progress"><span class="prg"><b style="color:var(--d-ink)">${a.correct}/${a.total}</b>
+        <span class="track"><i style="width:${pct}%"></i></span></span></td>
+      <td data-l="Score"><span class="scorepill ${cls}">${pct}%</span></td>
+      <td data-l="Time">${fmtTime(a.seconds)}</td>
+    </tr>`;
   }).join('');
+  box.innerHTML=`<table class="attempts"><thead><tr>
+      <th>Set name</th><th>Date</th><th>Progress</th><th>Score</th><th>Time</th>
+    </tr></thead><tbody>${rows}</tbody></table>`+
+    (list.length>8? `<div class="tfoot"><button class="btn-quiet" data-all>View all ${list.length} attempts ${D_ICON.arrow}</button></div>`:'');
+  const all=box.querySelector('[data-all]');
+  if(all) all.addEventListener('click',()=>{ renderStats(); show('scr-stats'); });
 }
 async function renderResume(){
   const box=$('#resumeBox'); box.innerHTML='';
@@ -1589,6 +2002,17 @@ function updateSelBar(){
   $('#selInfo').textContent = chosen.length? `${chosen.length} set${chosen.length>1?'s':''} selected · ${n} questions` : '';
   $('#btnBuild').disabled = !chosen.length;
   $('#btnDelete').disabled = !chosen.length;
+  const cta=$('#btnCta'), sub=$('#ctaSub');
+  /* One call to action at a time: the sticky bar takes over once a set is
+     chosen, so the banner steps aside instead of repeating it. */
+  const banner=document.querySelector('.lib .cta'), bar=document.querySelector('.lib .bar');
+  if(banner) banner.classList.toggle('hidden', !!chosen.length);
+  if(bar)    bar.classList.toggle('hidden', !chosen.length);
+  if(cta) cta.disabled = !chosen.length;
+  if(sub) sub.textContent = chosen.length
+    ? `${n} question${n===1?'':'s'} ready across ${chosen.length} set${chosen.length>1?'s':''}.`
+    : (app.index.length? 'Select a set above, then set up a session.'
+                       : 'Upload a question bank PDF to get started.');
 }
 
 const drop=$('#drop'), fileInput=$('#file');
@@ -2980,6 +3404,7 @@ async function cloudBackfill(){
 
 /* ── the panel on the library screen ────────────────────────────────── */
 function renderCloud(){
+  try{ renderWho(); }catch(e){}
   const box=$('#cloudBox'); if(!box) return;
   const pending=outbox().length;
   if(!cloud.on){
@@ -3228,6 +3653,82 @@ async function renderDone(){
     </details>`;
   }).join('');
 }
+async function resetEverything(){
+  /* Clear the account first. If this device went offline midway, the local
+     wipe still happens and nothing is left to re-upload. */
+  if(cloud.on){
+    for(const t of ['attempts','results','answered_questions','sets','prefs','session_state']){
+      try{ await sbRest(t+'?user_id=eq.'+encodeURIComponent(cloud.uid),{method:'DELETE'}); }
+      catch(e){ console.warn('reset: could not clear',t,e&&e.message); }
+    }
+  }
+  /* Then the device: the question banks, the answer log, the archive, prefs. */
+  try{ await idbRun('readwrite',s=>s.clear()); }catch(e){}
+  try{
+    for(const k of Object.keys(localStorage)) if(k.startsWith('bb_') && k!=='bb_auth') localStorage.removeItem(k);
+  }catch(e){}
+  try{ if(window.storage && window.storage.list){
+    const r=await window.storage.list('bb_',false);
+    for(const k of (r&&r.keys)||[]) await window.storage.delete(k,false);
+  } }catch(e){}
+  mem.clear();
+  cache.clear();
+  location.reload();
+}
+$('#btnReset').addEventListener('click',()=>{
+  const sets=app.index.length, done=app.log.length;
+  const bits=[];
+  if(sets) bits.push(`${sets} question set${sets===1?'':'s'}`);
+  if(done) bits.push(`${done} answered question${done===1?'':'s'}`);
+  if(app.history.length) bits.push(`${app.history.length} practice run${app.history.length===1?'':'s'}`);
+  confirmSheet('Reset everything?',
+    (bits.length? `This deletes ${bits.join(', ')}` : 'This deletes everything stored')+
+    `${cloud.on? ' — from this device and from your account' : ' from this device'}. `+
+    `You will need to import your PDFs again. This cannot be undone.`,
+    'Delete it all',
+    async()=>{ toast('Resetting…'); await resetEverything(); });
+});
+/* ── sidebar, global search, view toggle ── */
+app.setView='list';
+function setNav(k){ $$('#nav button').forEach(b=>b.classList.toggle('sel', b.dataset.nav===k)); }
+function closeNav(){ $('#side').classList.remove('on'); $('#scrim').classList.remove('on');
+  $('#navTog').setAttribute('aria-expanded','false'); }
+$('#navTog').addEventListener('click',()=>{
+  const open=!$('#side').classList.contains('on');
+  $('#side').classList.toggle('on',open); $('#scrim').classList.toggle('on',open);
+  $('#navTog').setAttribute('aria-expanded',String(open));
+});
+$('#scrim').addEventListener('click',closeNav);
+$('#nav').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-nav]'); if(!b) return;
+  const k=b.dataset.nav; setNav(k); closeNav();
+  const go=id=>{ const el=$('#'+id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+  if(k==='dash')      window.scrollTo({top:0,behavior:'smooth'});
+  else if(k==='sets') go('anchor-sets');
+  else if(k==='attempts'){ renderDone(); show('scr-done'); }
+  else if(k==='analytics'){ renderStats(); show('scr-stats'); }
+  else if(k==='settings') go('anchor-settings');
+  else if(k==='practice'){
+    if(app.selected.size) $('#btnBuild').click();
+    else { go('anchor-sets'); toast(app.index.length? 'Choose a set to practise.' : 'Upload a PDF to begin.'); }
+  }
+});
+$('#gSearch').addEventListener('input',e=>{
+  app.filter=e.target.value; const s=$('#setSearch'); if(s) s.value=e.target.value;
+  renderSets(); renderHistory();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName||'')) && $('#scr-lib').classList.contains('on')){
+    e.preventDefault(); $('#gSearch').focus();
+  }
+});
+$$('.vtog button').forEach(b=>b.addEventListener('click',()=>{
+  app.setView=b.dataset.view;
+  $$('.vtog button').forEach(x=>x.classList.toggle('sel',x===b));
+  renderSets();
+}));
+$('#btnPick2').addEventListener('click',()=>$('#file').click());
+$('#btnCta').addEventListener('click',()=>$('#btnBuild').click());
 $('#btnStats').addEventListener('click',()=>{ renderStats(); show('scr-stats'); });
 $('#btnStatsBack').addEventListener('click',()=>show('scr-lib'));
 $('#btnPractised').addEventListener('click',async()=>{ await renderDone(); show('scr-done'); });
