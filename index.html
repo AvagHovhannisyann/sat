@@ -396,6 +396,39 @@ details.adv>div:last-child{padding:0 18px 18px}
 .revline{margin:0 0 13px;padding:11px 14px;border-radius:11px;background:var(--d-amber-wash);
   color:#8a5a12;font-size:13px;line-height:1.5;border:1px solid #f3dfc0}
 .revline b{font-weight:650}
+.dial{margin-top:14px}
+.dial-head{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--ink-3);margin-bottom:7px}
+.dial-head b{font-size:14px;color:var(--ink);font-weight:650}
+.dialbar{-webkit-appearance:none;appearance:none;width:100%;height:7px;border-radius:99px;outline:0;
+  background:linear-gradient(90deg,var(--blue) 0%,var(--blue) var(--fill,50%),#e3e7ee var(--fill,50%),#e3e7ee 100%)}
+.dialbar::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;
+  border:2.5px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.22);cursor:pointer}
+.dialbar::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:2.5px solid var(--blue);
+  box-shadow:0 1px 4px rgba(0,0,0,.22);cursor:pointer}
+.dialbar:focus-visible{box-shadow:0 0 0 3px var(--blue-tint)}
+.dial-marks{position:relative;height:30px;margin-top:5px}
+.mark{position:absolute;transform:translateX(-50%);background:none;border:0;cursor:pointer;padding:2px 4px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-3);font:inherit;font-size:10.5px;
+  line-height:1.2;white-space:nowrap}
+.mark i{width:2px;height:7px;background:#c8cedb;border-radius:2px;display:block}
+.mark:hover{color:var(--ink)} .mark:hover i{background:var(--blue)}
+.mark.on{color:var(--blue);font-weight:650} .mark.on i{background:var(--blue)}
+.dial-mix{margin:14px 0 0;font-size:13px;color:var(--ink-2)}
+.dial-mix b{font-weight:700;color:var(--ink)}
+.dial-mix .of{color:var(--ink-3)}
+.dial-note{margin:9px 0 0;font-size:11.5px;line-height:1.45}
+
+/* review inside the test */
+.fig{margin:14px 0;text-align:center}
+.fig img{max-width:100%;height:auto;border-radius:6px;image-rendering:-webkit-optimize-contrast}
+.pane-left .fig img,.qwrap .fig img{max-height:none}
+.revonly{display:none}
+body.reviewing .revonly{display:inline-flex}
+body.reviewing #btnExit{display:none}
+.gq.right{background:var(--green);border-color:var(--green);color:#fff}
+.gq.wrong{background:#b3261e;border-color:#b3261e;color:#fff}
+.gq.blank{border-style:dashed;color:var(--ink-3)}
+
 .dangerzone{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px;padding:16px 18px;
   border:1px solid var(--line-soft);border-radius:14px;background:#fff}
 .dangerzone>div{flex:1;min-width:220px;display:flex;flex-direction:column;gap:3px}
@@ -1029,7 +1062,9 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
 
   <div class="rule"></div>
   <footer class="bb-bottom">
-    <div class="bb-bl"><b id="setLabel"></b><button class="btn-quiet" id="btnExit">Save &amp; exit</button></div>
+    <div class="bb-bl"><b id="setLabel"></b><button class="btn-quiet" id="btnExit">Save &amp; exit</button>
+      <button class="btn-quiet revonly" id="btnRevSummary">Score summary</button>
+      <button class="btn-quiet revonly" id="btnRevDone">Done</button></div>
     <div><button class="navpill" id="btnNav">Question 1 of 1 <span class="caret">▼</span></button></div>
     <div class="bb-br">
       <button class="nav-btn b-back" id="btnBack">Back</button>
@@ -1057,6 +1092,7 @@ mark.hl{padding:1px 0;border-radius:2px;cursor:pointer}
     <div class="bar">
       <button class="btn btn-ghost" id="btnRetryWrong">Retry incorrect</button>
       <button class="btn btn-ghost" id="btnRetryAll">Retake this set</button>
+      <button class="btn btn-ghost" id="btnBackToTest">Back to the test view</button>
       <button class="btn btn-primary" id="btnDone">Back to library</button>
     </div>
   </div>
@@ -1580,6 +1616,152 @@ function metaByString(s){
   o.skill=s; return normalizeMeta(o);
 }
 
+/* ── Finding the figures ────────────────────────────────────────────────
+   A vertical gap in the text is a poor way to find a picture: it misses every
+   table (whose rows sit at ordinary line spacing) and every chart whose axis
+   labels hug the plot. So instead ask the page what it actually draws —
+   images and vector paths — and treat clusters of that as figures.
+
+   Everything is measured in PDF user space, origin bottom-left, to match the
+   y values already carried on each text line.                              */
+function mulM(a,b){
+  return [a[0]*b[0]+a[2]*b[1], a[1]*b[0]+a[3]*b[1],
+          a[0]*b[2]+a[2]*b[3], a[1]*b[2]+a[3]*b[3],
+          a[0]*b[4]+a[2]*b[5]+a[4], a[1]*b[4]+a[3]*b[5]+a[5]];
+}
+async function graphicBoxes(page){
+  const OPS=(window.pdfjsLib||{}).OPS; if(!OPS) return [];
+  let ol; try{ ol=await page.getOperatorList(); }catch(e){ return []; }
+  const out=[]; const stack=[]; let m=[1,0,0,1,0,0]; let pend=null;
+  const pt=(x,y)=>[m[0]*x+m[2]*y+m[4], m[1]*x+m[3]*y+m[5]];
+  const push=(b,kind)=>{
+    if(!b) return;
+    const w=b.x1-b.x0, hh=b.y1-b.y0;
+    if(!isFinite(w)||!isFinite(hh)||w<0||hh<0) return;
+    out.push({x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1,kind});
+  };
+  const PAINT=new Set([OPS.fill,OPS.eoFill,OPS.stroke,OPS.fillStroke,OPS.eoFillStroke,
+                       OPS.closeFillStroke,OPS.closeEOFillStroke,OPS.closeStroke].filter(v=>v!=null));
+  const IMG=new Set([OPS.paintImageXObject,OPS.paintJpegXObject,OPS.paintInlineImageXObject,
+                     OPS.paintImageMaskXObject].filter(v=>v!=null));
+  for(let i=0;i<ol.fnArray.length;i++){
+    const fn=ol.fnArray[i], a=ol.argsArray[i];
+    if(fn===OPS.save){ stack.push(m.slice()); }
+    else if(fn===OPS.restore){ m=stack.pop()||[1,0,0,1,0,0]; }
+    else if(fn===OPS.transform && a && a.length>=6){ m=mulM(m,a); }
+    else if(IMG.has(fn)){
+      const c=[pt(0,0),pt(1,0),pt(0,1),pt(1,1)];
+      push({x0:Math.min(...c.map(p=>p[0])), y0:Math.min(...c.map(p=>p[1])),
+            x1:Math.max(...c.map(p=>p[0])), y1:Math.max(...c.map(p=>p[1]))},'img');
+    }
+    else if(fn===OPS.constructPath){
+      const co=(a&&a[1])||[];
+      let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+      for(let k=0;k+1<co.length;k+=2){
+        const p=pt(co[k],co[k+1]);
+        if(!isFinite(p[0])||!isFinite(p[1])) continue;
+        if(p[0]<x0)x0=p[0]; if(p[0]>x1)x1=p[0];
+        if(p[1]<y0)y0=p[1]; if(p[1]>y1)y1=p[1];
+      }
+      pend = isFinite(x0)? {x0,y0,x1,y1} : null;
+    }
+    else if(PAINT.has(fn)){ push(pend,'path'); pend=null; }
+  }
+  return out;
+}
+
+/* Group the drawing into figures, and say which text belongs inside them. */
+function figureRegions(boxes,pageW,pageH,lines,ctx,ulRects){
+  const MARGIN=26;
+  const uls=ulRects||[];
+  const isUnderline=b=>uls.some(r=>
+    Math.abs(r.x0-b.x0)<1.6 && Math.abs(r.x1-b.x1)<1.6 &&
+    Math.abs(r.y0-b.y0)<1.6 && Math.abs(r.y1-b.y1)<1.6);
+  const keep=boxes.filter(b=>{
+    const w=b.x1-b.x0, hh=b.y1-b.y0;
+    if(b.kind!=='img' && isUnderline(b)) return false;
+    if(w>pageW*0.92 && hh>pageH*0.92) return false;      // the page itself
+    if(w<=0.6 && hh<=0.6) return false;                   // a dot
+    if(b.y1>pageH-MARGIN || b.y0<MARGIN) return false;    // running head / foot
+    if(w>pageW*0.95) return false;                        // full-bleed rule
+    if(hh>pageH*0.75) return false;                       // column furniture
+    if(w*hh > pageW*pageH*0.55) return false;             // a background panel
+    return true;
+  });
+  if(!keep.length) return [];
+
+  /* Merge anything that touches or nearly touches. */
+  const GAP=9;
+  let cl=keep.map(b=>({x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1,img:b.kind==='img'?1:0,n:1,
+    tall:(b.y1-b.y0)>=10?1:0,
+    rules:((b.y1-b.y0)<3 && (b.x1-b.x0)>20)? [{x0:b.x0,x1:b.x1}] : []}));
+  for(let pass=0; pass<6; pass++){
+    let merged=false;
+    for(let i=0;i<cl.length;i++){
+      for(let j=i+1;j<cl.length;j++){
+        const a=cl[i],b=cl[j];
+        const oxy = a.x0 <= b.x1+GAP && b.x0 <= a.x1+GAP &&
+                    a.y0 <= b.y1+GAP && b.y0 <= a.y1+GAP;
+        if(!oxy) continue;
+        a.x0=Math.min(a.x0,b.x0); a.y0=Math.min(a.y0,b.y0);
+        a.x1=Math.max(a.x1,b.x1); a.y1=Math.max(a.y1,b.y1);
+        a.img+=b.img; a.n+=b.n; a.tall+=b.tall; a.rules=a.rules.concat(b.rules);
+        cl.splice(j,1); j--; merged=true;
+      }
+    }
+    if(!merged) break;
+  }
+
+  /* A cluster is a figure if it is a picture, or enough drawing to be a chart
+     or a ruled table — not a lone underline or a divider. */
+  const figs=cl.filter(c=>{
+    const w=c.x1-c.x0, hh=c.y1-c.y0;
+    if(c.img) return w>=18 && hh>=18;
+    if(hh<9) return false;                      // a single rule
+    if(w<38 || hh<24) return false;
+    if(c.n<2) return false;
+    /* Nothing page-sized is a figure in a question bank export. */
+    if(hh>pageH*0.62 || w>pageW*0.88 || w*hh>pageW*pageH*0.5) return false;
+    /* Underlines and dividers are flat. A chart has an axis, a table has
+       column rules — something with real height. Failing that, accept a
+       stack of four or more rules of matching width, which is a table drawn
+       with horizontal rules alone. */
+    if(c.tall) return true;
+    const rules=c.rules||[];
+    if(rules.length>=4){
+      const ws=rules.map(r=>r.x1-r.x0).sort((a,b)=>a-b);
+      if(ws[0] >= ws[ws.length-1]*0.85) return true;
+    }
+    return false;
+  });
+  if(!figs.length) return [];
+
+  /* Pull in any text sitting inside — table cells, axis labels, captions —
+     so the picture is whole and that text is not repeated as prose. */
+  /* Eligibility is always judged against the drawing's own bounds, never
+     against the growing region — otherwise each absorbed label drags in the
+     line below it and the figure swallows the whole question. */
+  for(const f of figs){
+    const oy0=f.y0, oy1=f.y1, ox0=f.x0, ox1=f.x1;
+    /* Labels sit under a chart and inside a table; the sentence that
+       introduces a figure sits above it and belongs to the prose. */
+    const padDown=ctx.lineGap*2.4, padUp=ctx.lineGap*0.3, padX=16;
+    for(const L of lines){
+      if(L.__inFig) continue;
+      const base=L.y;
+      const inY = base > oy0-padDown && base < oy1+padUp;
+      const inX = L.x0 > ox0-padX && (L.x1==null || L.x1 < ox1+padX);
+      if(!inY || !inX) continue;
+      L.__inFig=f;
+      f.y0=Math.min(f.y0, base-ctx.lineGap*0.35);
+      f.y1=Math.max(f.y1, base+ctx.lineGap*0.9);
+      f.x0=Math.min(f.x0, L.x0);
+      if(L.x1!=null) f.x1=Math.max(f.x1, L.x1);
+    }
+  }
+  return figs.sort((a,b)=>b.y1-a.y1);
+}
+
 function makeBlocks(lines,ctx,withFigures){
   const blocks=[]; let cur=[];
   const flush=()=>{ if(cur.length){ const t=cur.join(' ').replace(/\uE001(\s*)\uE000/g,'$1').replace(/[ \t]+/g,' ').trim(); if(plain(t)) blocks.push({t:'p',text:t}); cur=[]; } };
@@ -1596,13 +1778,38 @@ function makeBlocks(lines,ctx,withFigures){
         if(gap>FIG_GAP && gap<640) figGap=true;
       }
     }
+    /* A line that lives inside a picture is drawn with the picture, not typeset
+       again underneath it. */
+    if(withFigures && L.__inFig){
+      const f=L.__inFig;
+      if(!f.__emitted){
+        f.__emitted=true; flush();
+        blocks.push({t:'fig',page:L.page,yTop:f.y1,yBot:f.y0,x0:f.x0,x1:f.x1,real:true});
+      }
+      continue;
+    }
     const pt_=plain(L.text);
     if(/^Text\s+\d+\s*$/.test(pt_)||/^(Text|Passage)\s+\d+\s+is adapted from/i.test(pt_)) brk=true;
     if(brk) flush();
-    if(withFigures && figGap) blocks.push({t:'fig',page:L.page,yTop:P.y-ctx.lineGap*0.45,yBot:L.y+ctx.lineGap*1.05});
+    if(withFigures && figGap && !lines.some(x=>x.__inFig && x.page===L.page && x.y<=P.y && x.y>=L.y))
+      blocks.push({t:'fig',page:L.page,yTop:P.y-ctx.lineGap*0.45,yBot:L.y+ctx.lineGap*1.05});
     cur.push(L.text);
   }
   flush();
+  /* A figure that no line happened to sit inside — a bare chart between two
+     paragraphs — is placed by its position on the page. */
+  if(withFigures && lines.length){
+    const pages=new Set(lines.map(L=>L.page));
+    for(const pn of pages){
+      for(const f of (ctx.figsByPage&&ctx.figsByPage.get(pn))||[]){
+        if(f.__emitted) continue;
+        const above=lines.filter(L=>L.page===pn && L.y>f.y1);
+        if(!above.length && lines.some(L=>L.page===pn && L.y<f.y0)) continue;
+        f.__emitted=true;
+        blocks.push({t:'fig',page:pn,yTop:f.y1,yBot:f.y0,x0:f.x0,x1:f.x1,real:true});
+      }
+    }
+  }
   return blocks;
 }
 
@@ -1646,6 +1853,16 @@ function parseQuestionBank(pages){
     leftEdge: x0s.length? x0s[Math.floor(x0s.length*0.05)] : 18
   };
   ctx.contentW=Math.max(60, ctx.rightEdge-ctx.leftEdge);
+  /* Work out which parts of each page are pictures, and tag the text that
+     belongs inside them, before any block building happens. */
+  ctx.figsByPage=new Map();
+  for(const pg of pages){
+    if(!pg.gfx||!pg.gfx.length) continue;
+    try{
+      const figs=figureRegions(pg.gfx,pg.width,pg.height,pg.lines,ctx,pg.ul);
+      if(figs.length) ctx.figsByPage.set(pg.num-1,figs);
+    }catch(e){ /* a page we cannot read is simply a page with no figures */ }
+  }
 
   const all=[]; for(const pg of pages) for(const L of pg.lines) all.push(L);
   const starts=[]; all.forEach((L,i)=>{ if(/^Question ID:\s*\S/i.test(plain(L.text))) starts.push(i); });
@@ -1700,20 +1917,29 @@ async function extractFigures(pdf,questions,ctx,onProg){
       await page.render({canvasContext:cx,viewport:vp}).promise;
       const H=vp.height/scale;
       for(const b of byPage.get(pn)){
-        const x0=Math.max(0,Math.round((ctx.leftEdge-6)*scale));
-        const x1=Math.min(cv.width,Math.round((ctx.rightEdge+6)*scale));
+        /* A detected figure is cropped to its own bounds; a gap-detected one
+           still takes the full text column, since we only know its height. */
+        const padL = b.real? Math.max(ctx.leftEdge-6, b.x0-8) : ctx.leftEdge-6;
+        const padR = b.real? Math.min(ctx.rightEdge+6, b.x1+8) : ctx.rightEdge+6;
+        const x0=Math.max(0,Math.round(padL*scale));
+        const x1=Math.min(cv.width,Math.round(padR*scale));
         const top=Math.max(0,Math.floor((H-b.yTop)*scale));
         const bot=Math.min(cv.height,Math.ceil((H-b.yBot)*scale));
         const w=x1-x0, h=bot-top;
-        if(w<24||h<24){ b.drop=true; continue; }
+        if(w<20||h<20){ b.drop=true; continue; }
         const img=cx.getImageData(x0,top,w,h), d=img.data;
         let ink=0,n=0;
         for(let i=0;i<d.length;i+=16){ n++; if(d[i]<235||d[i+1]<235||d[i+2]<235) ink++; }
-        if(!n || ink/n < 0.004){ b.drop=true; continue; }
+        const floor = b.real? 0.0008 : 0.004;
+        if(!n || ink/n < floor){ b.drop=true; continue; }
         const oc=document.createElement('canvas'); oc.width=w; oc.height=h;
         oc.getContext('2d').putImageData(img,0,0);
-        b.src=oc.toDataURL('image/jpeg',0.82);
-        delete b.yTop; delete b.yBot; delete b.page;
+        /* Tables and charts are line art: PNG keeps the rules sharp. A big
+           dense region is more likely a photograph, where JPEG is kinder. */
+        const dense = (w*h > 900*900);
+        b.src = dense? oc.toDataURL('image/jpeg',0.86) : oc.toDataURL('image/png');
+        b.w=w/scale; b.h=h/scale;
+        delete b.yTop; delete b.yBot; delete b.page; delete b.x0; delete b.x1; delete b.real;
       }
     }catch(e){ (byPage.get(pn)||[]).forEach(b=>b.drop=true); }
     done++; if(onProg) onProg(done,pageNums.length);
@@ -1735,7 +1961,9 @@ async function importPdf(file,onProg){
     const rects=await underlineRects(page);
     const tc=await page.getTextContent();
     const vp=page.getViewport({scale:1});
-    pages.push({num:p,width:vp.width,height:vp.height,lines:buildLines(tc.items,p-1,rects)});
+    const gfx=await graphicBoxes(page);
+    pages.push({num:p,width:vp.width,height:vp.height,gfx,ul:rects,
+                lines:buildLines(tc.items,p-1,rects)});
     onProg('Reading page '+p+' of '+pdf.numPages, p/pdf.numPages*0.72);
     if(p%4===0) await tick();
   }
@@ -1808,6 +2036,50 @@ const BLUEPRINT={
    Easy and Hard mirror the two second modules the test routes you into.
    Hard is deliberately punishing — the real hard module is mostly hard
    questions, so this one takes every hard question it can get. */
+/* ── How hard is this module? ─────────────────────────────────────────────
+   The dial runs 0–100 in single points. Along it sit the three real module
+   shapes of the digital SAT.
+
+   College Board publishes the *structure* — one fixed Module 1 of medium
+   average difficulty, then an easier or harder Module 2 depending on how you
+   did — but it does not publish the easy/medium/hard split of either module.
+   The anchors below are therefore reasoned from what is documented (Module 1
+   averages medium; 2A carries more easy; 2B carries more hard) rather than
+   copied from an official table, and the interface says so.                */
+const MIX_ANCHORS=[
+  {pct:0,   Easy:1.00, Medium:0.00, Hard:0.00, name:''},
+  {pct:25,  Easy:0.55, Medium:0.35, Hard:0.10, name:'Module 2 · easier'},
+  {pct:50,  Easy:0.30, Medium:0.40, Hard:0.30, name:'Module 1'},
+  {pct:75,  Easy:0.10, Medium:0.30, Hard:0.60, name:'Module 2 · harder'},
+  {pct:100, Easy:0.00, Medium:0.00, Hard:1.00, name:''}
+];
+/* One point on the dial moves the mix by one point — no steps, no jumps. */
+function mixAt(pct){
+  const p=Math.max(0,Math.min(100,Math.round(pct)));
+  let a=MIX_ANCHORS[0], b=MIX_ANCHORS[MIX_ANCHORS.length-1];
+  for(let i=0;i<MIX_ANCHORS.length-1;i++){
+    if(p>=MIX_ANCHORS[i].pct && p<=MIX_ANCHORS[i+1].pct){ a=MIX_ANCHORS[i]; b=MIX_ANCHORS[i+1]; break; }
+  }
+  const span=b.pct-a.pct, t=span? (p-a.pct)/span : 0;
+  const m={Easy:a.Easy+(b.Easy-a.Easy)*t, Medium:a.Medium+(b.Medium-a.Medium)*t, Hard:a.Hard+(b.Hard-a.Hard)*t};
+  m.label=`${p}% hard`; m.pct=p;
+  return m;
+}
+/* Whole questions, still summing to the module length. */
+function mixCounts(pct,n){
+  const m=mixAt(pct);
+  const raw={Easy:m.Easy*n, Medium:m.Medium*n, Hard:m.Hard*n};
+  const out={Easy:Math.floor(raw.Easy), Medium:Math.floor(raw.Medium), Hard:Math.floor(raw.Hard)};
+  let left=n-(out.Easy+out.Medium+out.Hard);
+  const order=['Easy','Medium','Hard'].sort((x,y)=>(raw[y]-out[y])-(raw[x]-out[x]));
+  for(let i=0;left>0;i++,left--) out[order[i%3]]++;
+  return out;
+}
+function mixNameFor(pct){
+  const hit=MIX_ANCHORS.find(a=>a.name && Math.abs(a.pct-pct)<=2);
+  return hit? hit.name : '';
+}
+let modPct=50;
 const MIXES={
   easy  :{label:'Easy',   note:'mostly easy questions, to build accuracy',        Easy:0.55, Medium:0.35, Hard:0.10},
   medium:{label:'Medium', note:'the balanced mix of a real first module',         Easy:0.30, Medium:0.40, Hard:0.30},
@@ -2257,7 +2529,8 @@ $('#advBox').addEventListener('toggle',()=>{
   /* A programmatic change lands on the value we asked for; anything else is you. */
   if($('#advBox').open!==advWanted) advTouched=true;
 });
-async function buildModule(testName,mixKey){
+async function buildModule(testName,pct){
+  const mix=mixAt(pct);
   const R=moduleReadiness(testName);
   if(!R||!R.total){ toast('No questions of that section in these sets.'); return; }
   if(!R.complete){
@@ -2273,7 +2546,7 @@ async function buildModule(testName,mixKey){
   const picked=[];
   for(const d of R.bp.order){
     if(!R.alloc[d]) continue;
-    picked.push(...pickByMix(R.pool.filter(q=>(q.domain||'')===d), R.alloc[d], MIXES[mixKey]));
+    picked.push(...pickByMix(R.pool.filter(q=>(q.domain||'')===d), R.alloc[d], mix));
   }
   if(!picked.length){ toast('Could not assemble a module.'); return; }
   const qs=orderModule(picked,R.bp);
@@ -2281,7 +2554,8 @@ async function buildModule(testName,mixKey){
     ? R.bp.minutes*60
     : Math.max(60, Math.round(qs.length*(R.bp.minutes*60/R.bp.questions)));
   const secs = modMinutes===0? 0 : modMinutes? modMinutes*60 : natural;
-  const title=`${R.bp.label} — ${MIXES[mixKey].label}`+(qs.length<R.bp.questions?` (${qs.length} of ${R.bp.questions})`:'');
+  const named=mixNameFor(mix.pct);
+  const title=`${R.bp.label} — ${named||mix.label}`+(qs.length<R.bp.questions?` (${qs.length} of ${R.bp.questions})`:'');
   startSession(qs,title,{instant:false,advance:'stay',mode:secs?'down':'off',limit:secs,
     sets:app.poolSets||[],module:true});
 }
@@ -2294,9 +2568,36 @@ function renderReviewLine(){
     ? `<b>${due} question${due===1?'':'s'} due for review.</b> These are ones you got wrong. They go in first, and a timed module gives them any slot that fits its blueprint.`
     : `<b>${held} question${held===1?'':'s'} waiting to come back.</b> None are due yet — keep practising and they will reappear on their own.`;
 }
+function paintDial(t){
+  const R=moduleReadiness(t); if(!R) return;
+  const n=Math.min(R.total,R.bp.questions)||R.bp.questions;
+  const c=mixCounts(modPct,n), v=$('#dialVal-'+CSS.escape(t)), mx=$('#dialMix-'+CSS.escape(t));
+  const named=mixNameFor(modPct);
+  if(v)  v.textContent = modPct+'% hard'+(named? ' · '+named : '');
+  if(mx) mx.innerHTML = `<b>${c.Easy}</b> easy · <b>${c.Medium}</b> medium · <b>${c.Hard}</b> hard`
+                      + ` <span class="of">of ${n}</span>`;
+  const bar=document.querySelector(`[data-dial="${CSS.escape(t)}"]`);
+  if(bar) bar.style.setProperty('--fill', modPct+'%');
+  document.querySelectorAll(`[data-dial-for="${CSS.escape(t)}"]`).forEach(b=>
+    b.classList.toggle('on', Math.abs(+b.dataset.snap-modPct)<=2));
+}
 function renderModuleCard(){
   renderReviewLine();
   const box=$('#modReady');
+  const after=()=>{
+    $$('.dialbar',box).forEach(bar=>{
+      const t=bar.dataset.dial;
+      paintDial(t);
+      bar.addEventListener('input',()=>{ modPct=+bar.value; paintDial(t); });
+    });
+    $$('[data-snap]',box).forEach(b=>b.addEventListener('click',()=>{
+      modPct=+b.dataset.snap;
+      const t=b.dataset.dialFor, bar=document.querySelector(`[data-dial="${CSS.escape(t)}"]`);
+      if(bar) bar.value=modPct;
+      paintDial(t);
+    }));
+  };
+  setTimeout(after,0);
   const tests=Object.keys(BLUEPRINT).filter(t=>app.pool.some(q=>(q.test||'')===t));
   if(!tests.length){ box.innerHTML='<p class="hint" style="margin:0">These sets carry no section label, so a blueprint module cannot be built from them.</p>'; return; }
   box.innerHTML=tests.map(t=>{
@@ -2316,13 +2617,21 @@ function renderModuleCard(){
       <h5>${esc(R.bp.label)} module ${badge}</h5>
       <p class="stat-line">${R.bp.questions} questions · ${R.bp.minutes} minutes · answers held until you finish</p>
       ${rows}${tip}
-      <div class="seg lvl" style="margin-top:13px">
-        ${Object.keys(MIXES).map(k=>`<button data-mod="${t}" data-mix="${k}" class="go" title="${esc(MIXES[k].note)}">${esc(MIXES[k].label)}</button>`).join('')}
+      <div class="dial">
+        <div class="dial-head"><span>How hard?</span><b id="dialVal-${esc(t)}"></b></div>
+        <input type="range" min="0" max="100" step="1" value="${modPct}" class="dialbar"
+               data-dial="${esc(t)}" aria-label="Module difficulty, per cent hard">
+        <div class="dial-marks">${MIX_ANCHORS.filter(a=>a.name).map(a=>
+          `<button class="mark" data-snap="${a.pct}" data-dial-for="${esc(t)}" style="left:${a.pct}%"
+                   title="Snap to ${esc(a.name)}"><i></i><span>${esc(a.name)}</span></button>`).join('')}</div>
+        <p class="dial-mix" id="dialMix-${esc(t)}"></p>
+        <button class="btn btn-primary go" data-mod="${esc(t)}" style="margin-top:12px">Start this module</button>
+        <p class="stat-line dial-note">Marks show the three module shapes of the real test. College Board publishes the
+          adaptive structure but not the exact easy/medium/hard split, so these positions are informed estimates.</p>
       </div>
-      <p class="stat-line" style="margin:9px 0 0">${Object.keys(MIXES).map(k=>esc(MIXES[k].label)+' — '+esc(MIXES[k].note)).join(' · ')}</p>
     </div>`;
   }).join('');
-  $$('#modReady [data-mod]').forEach(b=>b.addEventListener('click',()=>buildModule(b.dataset.mod,b.dataset.mix)));
+  $$('#modReady [data-mod]').forEach(b=>b.addEventListener('click',()=>buildModule(b.dataset.mod,modPct)));
   renderModTime(tests[0]);
   /* Fold the custom panel away when a full module is available, and open it
      when one is not, so there is never a dead end. Once you open or close it
@@ -2556,7 +2865,9 @@ $('#btnAbc').addEventListener('click',()=>{
 
 function blocksHtml(blocks){
   return blocks.map(b=>{
-    if(b.t==='fig') return `<figure class="fig"><img src="${b.src}" alt="Figure from the question"></figure>`;
+    if(b.t==='fig') return `<figure class="fig"><img src="${b.src}" alt="Figure from the question"`
+      + (b.w&&b.h? ` width="${Math.round(b.w)}" height="${Math.round(b.h)}"` : '')
+      + `></figure>`;
     const p=plain(b.text);
     const cls = /^(Text|Passage)\s+\d+$/.test(p) ? ' class="tlabel"' : '';
     return `<p${cls}>${rich(b.text)}</p>`;
@@ -2686,6 +2997,7 @@ function feedbackHtml(q){
 }
 
 function pick(L){
+  if(S.review) return;                      /* the run is over; answers are fixed */
   if(S.instant && S.checked[S.i]) return;
   saveAnnotations();
   S.answers[S.i]= S.answers[S.i]===L ? null : L;      /* tap again to clear, as in Bluebook */
@@ -2694,6 +3006,7 @@ function pick(L){
   saveSession();
 }
 function toggleElim(L){
+  if(S.review) return;
   if(S.instant && S.checked[S.i]) return;
   saveAnnotations();
   const a=S.elim[S.i], k=a.indexOf(L);
@@ -2732,6 +3045,8 @@ function goto(i){
 $('#btnBack').addEventListener('click',()=>goto(S.i-1));
 $('#btnNext').addEventListener('click',()=>{ if(S.i===S.qs.length-1) askFinish(); else goto(S.i+1); });
 $('#btnMark').addEventListener('click',()=>{ S.marked[S.i]=!S.marked[S.i]; $('#btnMark').setAttribute('aria-pressed',String(S.marked[S.i])); saveSession(); });
+$('#btnRevSummary').addEventListener('click',()=>{ leaveTestReview(); show('scr-review'); });
+$('#btnRevDone').addEventListener('click',()=>{ leaveTestReview(); $('#btnDone').click(); });
 $('#btnExit').addEventListener('click',()=>{
   confirmSheet('Save and leave?','This run is saved — you can pick it up from the library whenever you like.','Save & exit',async()=>{
     saveAnnotations(); S.spent[S.i]+=(Date.now()-S.qStart)/1000; saveSession();
@@ -2840,16 +3155,50 @@ $('#btnMore').addEventListener('click',e=>{
 $('#btnNav').addEventListener('click',e=>{
   e.stopPropagation();
   if(popEl && popEl.classList.contains('nav-pop')){ closePops(); return; }
-  const p=openPop('nav-pop',`<h4>${esc(S.title)}</h4>
-    <div class="legend"><span><i style="border:1.6px dashed #b9b9b9"></i>Unanswered</span><span><i style="background:var(--blue)"></i>Answered</span><span><i style="background:#b3261e"></i>Marked</span></div>
-    <div class="grid">${S.qs.map((q,i)=>
-      `<button class="gq${answered(i)?' done':''}${i===S.i?' cur':''}" data-i="${i}">${i+1}${S.marked[i]?'<svg class="flag" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v20l-6-4-6 4z"/></svg>':''}</button>`
-    ).join('')}</div>
-    <div class="foot"><button class="btn btn-primary" id="navFinish">Go to review page</button></div>`);
+  const legend = S.review
+    ? `<div class="legend"><span><i style="background:var(--green)"></i>Right</span><span><i style="background:#b3261e"></i>Wrong</span><span><i style="border:1.6px dashed #b9b9b9"></i>Left blank</span></div>`
+    : `<div class="legend"><span><i style="border:1.6px dashed #b9b9b9"></i>Unanswered</span><span><i style="background:var(--blue)"></i>Answered</span><span><i style="background:#b3261e"></i>Marked</span></div>`;
+  const cell=(q,i)=>{
+    let cls='gq';
+    if(S.review) cls += !answered(i)? ' blank' : (isRight(i)? ' right' : ' wrong');
+    else if(answered(i)) cls+=' done';
+    if(i===S.i) cls+=' cur';
+    return `<button class="${cls}" data-i="${i}">${i+1}${S.marked[i]?'<svg class="flag" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12v20l-6-4-6 4z"/></svg>':''}</button>`;
+  };
+  const foot = S.review
+    ? `<div class="foot"><button class="btn btn-ghost" id="navSummary">Score summary</button><button class="btn btn-primary" id="navDone">Done</button></div>`
+    : `<div class="foot"><button class="btn btn-primary" id="navFinish">Go to review page</button></div>`;
+  const p=openPop('nav-pop',`<h4>${esc(S.title)}</h4>${legend}
+    <div class="grid">${S.qs.map(cell).join('')}</div>${foot}`);
   $$('.gq',p).forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.i; closePops(); goto(i); }));
-  $('#navFinish',p).addEventListener('click',()=>{ closePops(); askFinish(); });
+  const f=$('#navFinish',p);  if(f) f.addEventListener('click',()=>{ closePops(); askFinish(); });
+  const sm=$('#navSummary',p);if(sm) sm.addEventListener('click',()=>{ closePops(); leaveTestReview(); show('scr-review'); });
+  const dn=$('#navDone',p);   if(dn) dn.addEventListener('click',()=>{ closePops(); leaveTestReview(); $('#btnDone').click(); });
 });
 
+/* Re-enter the exam screen with every answer already revealed: the passage on
+   the left, the choices on the right with yours and the right one marked, the
+   rationale underneath, and the same numbered navigator along the bottom. */
+function enterTestReview(){
+  const r=app.lastResult; if(!r||!r.rows.length) return;
+  S.qs=r.rows.map(x=>x.q); S.title=r.title; S.i=0;
+  S.answers=r.rows.map(x=>x.given);
+  S.checked=r.rows.map(()=>true);
+  S.marked =r.rows.map(x=>!!x.marked);
+  S.spent  =r.rows.map(x=>x.seconds||0);
+  S.elim=S.qs.map(()=>[]); S.annot=S.qs.map(()=>null);
+  S.instant=true; S.review=true; S.finished=true; S.module=false;
+  S.retried={}; S.requeued=0;
+  S.mode='off'; S.limit=0; S.elapsed=0; S.started=Date.now(); S.qStart=Date.now();
+  S.hidden=false; S.annotate=false; S.crossout=false;
+  stopClock();
+  enterExam();
+  document.body.classList.add('reviewing');
+}
+function leaveTestReview(){
+  S.review=false;
+  document.body.classList.remove('reviewing');
+}
 function askFinish(){
   const blank=S.qs.reduce((n,q,i)=> n + (answered(i)?0:1),0);
   confirmSheet(
@@ -3103,7 +3452,7 @@ async function finishExam(auto){
   app.qIndex=null;
 
   renderReview('all');
-  show('scr-review');
+  enterTestReview();
 }
 
 let revFilter='all';
@@ -3873,6 +4222,7 @@ $$('.vtog button').forEach(b=>b.addEventListener('click',()=>{
 }));
 $('#btnPick2').addEventListener('click',()=>$('#file').click());
 $('#btnCta').addEventListener('click',()=>$('#btnBuild').click());
+$('#btnBackToTest').addEventListener('click',enterTestReview);
 $('#btnStats').addEventListener('click',()=>{ renderStats(); show('scr-stats'); });
 $('#btnStatsBack').addEventListener('click',()=>show('scr-lib'));
 $('#btnPractised').addEventListener('click',async()=>{ await renderDone(); show('scr-done'); });
